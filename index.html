@@ -2144,16 +2144,13 @@ async function loadState() {
 async function saveState() {
   const json = JSON.stringify(state);
   try {
-    await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value: json })
-    });
+    // GETパラメータでデータを送信（CORSプリフライト不要）
+    const url = GAS_URL + '?action=set&value=' + encodeURIComponent(json);
+    const res = await fetch(url, { mode: 'cors' });
+    const result = await res.json();
+    if (!result.ok) throw new Error(result.error || 'save failed');
   } catch (e) {
     console.error('GAS保存失敗:', e);
-    // フォールバック: window.storage
-    try { await window.storage.set(STORAGE_KEY, json, SHARED); } catch (e2) {}
   }
 }
 async function resetData() {
