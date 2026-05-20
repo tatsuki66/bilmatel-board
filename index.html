@@ -2537,7 +2537,7 @@ function renderHome() {
         <div>
           <div class="hero-eyebrow">NEXT MEETING</div>
           <div class="hero-title">${escapeHtml(m.title)}</div>
-          <div class="hero-meta">${formatDate(m.date)} · 14:00 — 5名</div>
+          <div class="hero-meta">${formatDate(m.date)}</div>
         </div>
         <div class="hero-countdown">
           <div class="hero-countdown-num">${days >= 0 ? days : '—'}</div>
@@ -3492,7 +3492,7 @@ function openAddActionModal(type, id, label) {
           <div class="modal-field">
             <div class="field-label">担当者</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              ${PERSONS.map(p => `
+              ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
                   <input type="radio" name="act-assignee" value="${p.id}" ${p.id === state.currentUserId ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
@@ -3741,7 +3741,7 @@ function renderActions() {
       <button class="filter-pill ${actionAssigneeFilter === 'all' ? 'active' : ''}" onclick="setActionAssigneeFilter('all')">
         全員<span class="count">${state.actions.length}</span>
       </button>
-      ${PERSONS.filter(p => p.id !== 'other').map(p => {
+      ${getEffectivePersons().filter(p => p.id !== 'other').map(p => {
         const cnt = state.actions.filter(a => a.assigneeId === p.id).length;
         return `
           <button class="filter-pill ${actionAssigneeFilter === p.id ? 'active' : ''}" onclick="setActionAssigneeFilter('${p.id}')">
@@ -3895,7 +3895,7 @@ function openEditActionModal(actionId) {
           <div class="modal-field">
             <div class="field-label">担当者</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              ${PERSONS.map(p => `
+              ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
                   <input type="radio" name="edit-act-assignee" value="${p.id}" ${p.id === a.assigneeId ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
@@ -3969,7 +3969,7 @@ function openAddActionFromActionsPage() {
           <div class="modal-field">
             <div class="field-label">担当者</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              ${PERSONS.map(p => `
+              ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
                   <input type="radio" name="manual-act-assignee" value="${p.id}" ${p.id === cur ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
@@ -4628,7 +4628,7 @@ function openAddLogAction(meetingId) {
           <div class="modal-field">
             <div class="field-label">担当者</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              ${PERSONS.filter(p=>p.id!=='other').map(p => `
+              ${getEffectivePersons().filter(p=>p.id!=='other').map(p => `
                 <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ink-200);border-radius:var(--radius);cursor:pointer;flex:1;min-width:100px;">
                   <input type="radio" name="log-act-assignee" value="${p.id}" ${p.id===cur?'checked':''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
