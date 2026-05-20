@@ -188,12 +188,91 @@
     border-top: 1px solid var(--rule-soft);
     font-size: 11px;
     color: var(--ink-400);
-    padding-left: 8px;
   }
   .sidebar-footer .date-line {
     font-family: var(--font-mono);
     color: var(--ink-500);
     margin-top: 2px;
+    padding-left: 8px;
+  }
+  .sidebar-footer .footer-date-block {
+    padding-left: 8px;
+    margin-bottom: 14px;
+  }
+  /* サイドバー内入力者切替 */
+  .sidebar-user-switcher {
+    border-top: 2px solid var(--rule);
+    padding-top: 14px;
+  }
+  .sidebar-user-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent-ink);
+    text-transform: uppercase;
+    padding: 0 10px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .sidebar-user-label::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-ink);
+    flex-shrink: 0;
+  }
+  .sidebar-user-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 10px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-700);
+    transition: all 0.15s;
+    text-align: left;
+    margin-bottom: 2px;
+  }
+  .sidebar-user-btn:hover { background: var(--paper-3); border-color: var(--rule-soft); }
+  .sidebar-user-btn.active {
+    background: var(--ink-900);
+    color: var(--paper);
+    border-color: transparent;
+  }
+  .sidebar-user-btn.active .avatar { border-color: rgba(255,255,255,0.3); }
+  .sidebar-user-btn .avatar { width: 28px; height: 28px; font-size: 11px; flex-shrink: 0; }
+  .sidebar-user-name { flex: 1; }
+  /* トップバー右側のユーザー表示（モバイル用） */
+  .topbar-user-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: var(--paper-3);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-700);
+    transition: all 0.15s;
+  }
+  .topbar-user-chip:hover { border-color: var(--ink-300); background: var(--paper-2); }
+  .topbar-user-chip-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent-ink);
+    text-transform: uppercase;
+    margin-right: 2px;
   }
 
   /* ============================================
@@ -1332,6 +1411,7 @@
     transition: background 0.15s;
   }
   .action-row:last-child { border-bottom: none; }
+  .action-row.near-due { background: rgba(245, 235, 208, 0.45); }
   .action-row:hover { background: var(--paper-2); }
   .action-status-dot {
     width: 10px; height: 10px;
@@ -1765,7 +1845,7 @@
        ============================================ -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">BILMATEL</div>
+      <div class="brand-mark">BUILMATEL</div>
       <div class="brand-name">役員定例<br>ボード</div>
       <div class="brand-sub">EXECUTIVE COUNCIL</div>
     </div>
@@ -1773,8 +1853,11 @@
     <div id="sidebar-nav"></div>
 
     <div class="sidebar-footer">
-      <div>今日</div>
-      <div class="date-line" id="today-date">—</div>
+      <div class="footer-date-block">
+        <div>今日</div>
+        <div class="date-line" id="today-date">—</div>
+      </div>
+      <div class="sidebar-user-switcher" id="sidebar-user-switcher"></div>
     </div>
   </aside>
 
@@ -1797,6 +1880,7 @@
         </div>
       </div>
       <div class="topbar-actions" id="topbar-actions"></div>
+      <div id="topbar-user-chip-container"></div>
     </div>
 
     <nav class="mobile-nav" id="mobile-nav"></nav>
@@ -1822,7 +1906,7 @@
   <div class="drawer" id="drawer" onclick="event.stopPropagation()">
     <div class="drawer-header">
       <div>
-        <div class="drawer-brand-mark">BILMATEL</div>
+        <div class="drawer-brand-mark">BUILMATEL</div>
         <div class="drawer-brand-name">役員定例<br>ボード</div>
       </div>
       <button class="drawer-close-btn" onclick="closeDrawer()">
@@ -1850,6 +1934,7 @@ const NAV_SVG_MAP = {
   'ti-checkup-list':          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M3 17h6M3 21h6M13 5h8M13 9h5M13 17h8M13 21h5"/><polyline points="5 7 6 8 8 6"/></svg>',
   'ti-archive':               '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
   'ti-adjustments-horizontal':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>',
+  'ti-users':                 '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
 };
 function getNavSvg(icon) { return NAV_SVG_MAP[icon] || ''; }
 
@@ -1867,9 +1952,9 @@ function getThemeSvg(icon) { return THEME_SVG_MAP[icon] || ''; }
 // データ定義
 // ============================================================
 const PERSONS = [
-  { id: 'hato', name: '鳩崎さん', role: '物流・製造部統括', initial: '鳩', avatarClass: 'avatar-1' },
-  { id: 'yama', name: '山崎さん', role: '営業業務統括', initial: '山', avatarClass: 'avatar-2' },
-  { id: 'hira', name: '平本さん', role: '工務統括', initial: '平', avatarClass: 'avatar-3' },
+  { id: 'hato', name: '鳩崎さん', role: '', initial: '鳩', avatarClass: 'avatar-1' },
+  { id: 'yama', name: '山崎さん', role: '', initial: '山', avatarClass: 'avatar-2' },
+  { id: 'hira', name: '平本さん', role: '', initial: '平', avatarClass: 'avatar-3' },
   { id: 'okaw', name: '小河内さん', role: '', initial: '小', avatarClass: 'avatar-4' },
   { id: 'other', name: 'その他', role: '', initial: '他', avatarClass: 'avatar-5' }
 ];
@@ -1947,13 +2032,24 @@ const SIGNAL_THEMES = [
   }
 ];
 
-const STORAGE_KEY = 'bilmatel_board_state_v2';
+const STORAGE_KEY = 'builmatel_board_state_v2';
 const SHARED = true;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwFFYlvftzUsQlw6jXVLDTiPQPDP3DuhCsKioDHJfPOLsuUBRZjxUmUFV2qU_fP9IrZ1A/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyydUsNEdQJJ6eHQi_0xUFJ9yJb_RTRsuOHn2-UlbKw_wDjDrM04KrDPvodHFFvjaWWQQ/exec';
 
 // ============================================================
 // 日付ヘルパー
 // ============================================================
+function getNextMeetingDate() {
+  const settings = (state && state.meetingSettings) || { intervalWeeks: 1, dayOfWeek: 5 };
+  const targetDay = settings.dayOfWeek;
+  const d = new Date();
+  let diff = targetDay - d.getDay();
+  if (diff <= 0) diff += 7;
+  d.setDate(d.getDate() + diff);
+  if (settings.intervalWeeks > 1) d.setDate(d.getDate() + (settings.intervalWeeks - 1) * 7);
+  return d.toISOString().slice(0,10);
+}
+
 function getNextFriday() {
   const d = new Date();
   const day = d.getDay();
@@ -1987,6 +2083,7 @@ function createSampleData() {
   return {
     currentMeetingId: nextMeetingId,
     currentUserId: 'hato',
+    meetingSettings: { intervalWeeks: 1, dayOfWeek: 5 },
     meetings: {
       [nextMeetingId]: {
         id: nextMeetingId,
@@ -2120,6 +2217,7 @@ function createSampleData() {
 let state = null;
 let currentPage = 'home';
 let actionFilter = 'all';
+let selectedActions = new Set();
 let expandedThemes = new Set();
 
 async function loadState() {
@@ -2143,35 +2241,24 @@ async function loadState() {
 }
 async function saveState() {
   const json = JSON.stringify(state);
-  // バックグラウンドで保存（呼び出し元はawaitしない）
-  const url = GAS_URL + '?action=set&value=' + encodeURIComponent(json);
-  setSyncStatus('syncing', '保存中...');
   try {
-    const res = await fetch(url, { mode: 'cors' });
+    // text/plain でPOST → CORSプリフライト不要、データサイズ制限なし
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ value: json }),
+    });
     const result = await res.json();
     if (!result.ok) throw new Error(result.error || 'save failed');
-    setSyncStatus('', '最終同期: ' + formatSyncTime());
   } catch (e) {
     console.error('GAS保存失敗:', e);
-    setSyncStatus('error', '保存失敗 - 再試行中...');
-    // 5秒後にリトライ
-    setTimeout(async () => {
-      try {
-        const res2 = await fetch(url, { mode: 'cors' });
-        const r2 = await res2.json();
-        if (r2.ok) setSyncStatus('', '最終同期: ' + formatSyncTime());
-        else setSyncStatus('error', '保存失敗（要確認）');
-      } catch(e2) {
-        setSyncStatus('error', '保存失敗（要確認）');
-      }
-    }, 5000);
   }
 }
 async function resetData() {
   closeModal();
   if (!confirm('すべてのデータを初期サンプルにリセットしますか？\n現在の入力内容は失われます。')) return;
   state = createSampleData();
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderAll();
 }
 
@@ -2255,7 +2342,8 @@ function getNavItems() {
     { id: 'meeting', label: '会議画面', icon: 'ti-presentation', eyebrow: 'MEETING' },
     { id: 'actions', label: 'アクション', icon: 'ti-checkup-list', eyebrow: 'ACTIONS', badge: overdueCount > 0 ? overdueCount : null, badgeType: 'alert' },
     { id: 'log', label: '過去ログ', icon: 'ti-archive', eyebrow: 'ARCHIVE' },
-    { id: 'signal_admin', label: 'シグナル管理', icon: 'ti-adjustments-horizontal', eyebrow: 'SETTINGS' }
+    { id: 'signal_admin', label: 'シグナル管理', icon: 'ti-adjustments-horizontal', eyebrow: 'SETTINGS' },
+    { id: 'member_admin', label: 'メンバー管理', icon: 'ti-users', eyebrow: 'SETTINGS' }
   ];
 }
 function renderSidebarNav() {
@@ -2272,6 +2360,58 @@ function renderSidebarNav() {
     `).join('')}
   `;
 }
+function renderSidebarUserSwitcher() {
+  const container = document.getElementById('sidebar-user-switcher');
+  if (!container) return;
+  const cur = state.currentUserId;
+  container.innerHTML = `
+    <div class="sidebar-user-label">入力者</div>
+    ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
+      <button class="sidebar-user-btn ${cur === p.id ? 'active' : ''}" onclick="setCurrentUser('${p.id}')">
+        <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
+        <span class="sidebar-user-name">${escapeHtml(p.name)}</span>
+        ${cur === p.id ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </button>
+    `).join('')}
+  `;
+  // モバイル: topbar右端にユーザーチップ表示
+  const chipContainer = document.getElementById('topbar-user-chip-container');
+  if (chipContainer) {
+    const p = getEffectivePersons().find(x => x.id === cur) || getEffectivePersons()[0];
+    chipContainer.innerHTML = `
+      <button class="topbar-user-chip" onclick="openUserSwitchDrawer()">
+        <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
+        <span class="topbar-user-chip-label">入力者</span>
+        <span>${escapeHtml(p.name)}</span>
+      </button>
+    `;
+  }
+}
+
+function openUserSwitchDrawer() {
+  const cur = state.currentUserId;
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:360px;">
+        <div class="modal-head">
+          <div class="modal-title">入力者を切替</div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body" style="padding:8px 0;">
+          ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
+            <button onclick="setCurrentUser('${p.id}');closeModal();"
+              style="display:flex;align-items:center;gap:12px;width:100%;padding:12px 20px;border:none;background:${p.id===cur?'var(--ink-900)':'transparent'};color:${p.id===cur?'var(--paper)':'var(--ink-700)'};cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;text-align:left;transition:background 0.15s;">
+              <div class="avatar ${p.avatarClass}" style="width:32px;height:32px;font-size:13px;">${p.initial}</div>
+              <span style="flex:1;">${escapeHtml(p.name)}</span>
+              ${p.id===cur?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderMobileNav() {
   // モバイルナビは廃止 → ドロワーを更新
   renderDrawerNav();
@@ -2289,6 +2429,7 @@ function renderDrawerNav() {
     'ti-checkup-list':           '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M3 17h6M3 21h6M13 5h8M13 9h5M13 17h8M13 21h5"/><polyline points="5 7 6 8 8 6"/></svg>',
     'ti-archive':                '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
     'ti-adjustments-horizontal': '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>',
+    'ti-users': '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   };
   container.innerHTML = items.map(item => `
     <button class="drawer-nav-item ${currentPage === item.id ? 'active' : ''}"
@@ -2345,6 +2486,7 @@ function switchPage(id) {
 function renderAll() {
   document.getElementById('today-date').textContent = formatDate(new Date().toISOString().slice(0,10));
   renderSidebarNav();
+  renderSidebarUserSwitcher();
   renderMobileNav();
   renderTopbar();
   renderPage();
@@ -2358,7 +2500,8 @@ function renderPage() {
      currentPage === 'meeting' ? renderMeeting() :
      currentPage === 'actions' ? renderActions() :
      currentPage === 'log' ? renderLog() :
-     currentPage === 'signal_admin' ? renderSignalAdmin() : '') +
+     currentPage === 'signal_admin' ? renderSignalAdmin() :
+     currentPage === 'member_admin' ? renderMemberAdmin() : '') +
     '</div>';
 }
 
@@ -2428,13 +2571,13 @@ function renderHome() {
     <div class="section-head">
       <div class="section-head-left">
         <div class="section-num">I</div>
-        <div class="section-title">役員入力ステータス</div>
+        <div class="section-title">入力ステータス</div>
       </div>
       <div class="section-desc">事前準備の進捗</div>
     </div>
 
     <div class="member-status-card">
-      ${PERSONS.map(p => {
+      ${getEffectivePersons().filter(p => p.id !== 'other').map(p => {
         const hasPillar = Object.values(m.pillarUpdates || {}).some(u => {
           const arr = Array.isArray(u) ? u : [u];
           return arr.some(c => c.authorId === p.id);
@@ -2446,6 +2589,14 @@ function renderHome() {
         pills += hasQual
           ? `<span class="pill pill-success"><span class="pill-dot pill-dot-success"></span>定性入力済</span>`
           : `<span class="pill pill-todo"><span class="pill-dot pill-dot-todo"></span>定性未入力</span>`;
+
+        // 鳩崎さんのみ: 定量入力チェック（1件以上yes/noを入力済みとみなす）
+        if (p.id === 'hato') {
+          const hasQuant = Object.values(m.signals || {}).some(s => s.state === 'yes' || s.state === 'no');
+          pills += hasQuant
+            ? `<span class="pill pill-success"><span class="pill-dot pill-dot-success"></span>定量入力済</span>`
+            : `<span class="pill pill-todo"><span class="pill-dot pill-dot-todo"></span>定量未入力</span>`;
+        }
 
         return `
           <div class="member-row">
@@ -2499,6 +2650,7 @@ function renderHome() {
     <div class="card-soft">
       <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
         <button class="btn btn-secondary" onclick="openCreateMeetingModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>次回定例を作成</button>
+        <button class="btn btn-secondary" onclick="openMeetingSettingsModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>開催周期を設定</button>
         <button class="btn btn-secondary" onclick="openCompleteMeetingModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>現在の定例を完了</button>
         <button class="btn btn-danger" onclick="resetData()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>サンプルにリセット</button>
       </div>
@@ -2546,6 +2698,14 @@ function renderQuant() {
         <button class="source-link" onclick="alert('運用開始時にURLを設定します')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>CAUL売上実績</button>
         <button class="source-link" onclick="alert('運用開始時にURLを設定します')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>月次試算表</button>
       </div>
+    </div>
+
+    <!-- 一括リセット -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="resetCurrentSignals()" style="font-size:11px;color:var(--ink-400);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        シグナル入力をリセット
+      </button>
     </div>
 
     <!-- Themes -->
@@ -2647,7 +2807,7 @@ async function setSignal(signalId, newState) {
   } else {
     m.signals[signalId].state = newState;
   }
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderAll();
 }
 
@@ -2655,26 +2815,35 @@ async function updateSignalComment(signalId, value) {
   const m = getCurrentMeeting();
   if (!m.signals[signalId]) m.signals[signalId] = {};
   m.signals[signalId].comment = value;
-  saveState(); // バックグラウンド保存
+  await saveState();
 }
 
 async function setSignalDiscuss(signalId, value) {
   const m = getCurrentMeeting();
   if (!m.signals[signalId]) m.signals[signalId] = {};
   m.signals[signalId].discussInMeeting = value;
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 
 async function updateFreeNumber(value) {
   const m = getCurrentMeeting();
   m.freeNumberComment = value;
-  saveState(); // バックグラウンド保存
+  await saveState();
 }
 
 // ============================================================
 // 定性事前入力
 // ============================================================
+async function resetCurrentSignals() {
+  if (!confirm('今回の定例のシグナル入力（すべてのあり/なし回答とコメント）をリセットしますか？')) return;
+  const m = getCurrentMeeting();
+  m.signals = {};
+  m.freeNumberComment = '';
+  await saveState();
+  renderPage();
+}
+
 function renderQual() {
   const m = getCurrentMeeting();
   const cur = state.currentUserId;
@@ -2686,17 +2855,6 @@ function renderQual() {
       <div class="page-intro-desc">
         中期経営計画5本柱の進捗報告と、今週議論したい論点を入力してください。
       </div>
-    </div>
-
-    <!-- Person Selector -->
-    <div style="margin-bottom: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--ink-500); text-transform: uppercase;">入力者を選択</div>
-    <div class="person-selector">
-      ${PERSONS.map(p => `
-        <button class="person-pill ${cur === p.id ? 'active' : ''}" onclick="setCurrentUser('${p.id}')">
-          <div class="avatar avatar-sm ${p.avatarClass}">${p.initial}</div>
-          <span>${escapeHtml(p.name)}</span>
-        </button>
-      `).join('')}
     </div>
 
     <!-- 5本柱 -->
@@ -2846,7 +3004,8 @@ function renderQual() {
 
 async function setCurrentUser(id) {
   state.currentUserId = id;
-  saveState(); // バックグラウンド保存
+  await saveState();
+  renderSidebarUserSwitcher();
   renderPage();
 }
 function getPillarComments(m, pillarId) {
@@ -2871,7 +3030,7 @@ async function updatePillarComment(pillarId, value) {
   } else {
     m.pillarUpdates[pillarId] = [...comments, { authorId: cur, text: value }];
   }
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderSidebarNav();
   renderMobileNav();
 }
@@ -2885,7 +3044,7 @@ async function addTopic() {
     comments: [],
     transcript: '', conclusion: '', actions: []
   });
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 async function updateTopic(topicId, field, value) {
@@ -2893,14 +3052,14 @@ async function updateTopic(topicId, field, value) {
   const t = (m.topics || []).find(x => x.id === topicId);
   if (t) {
     t[field] = value;
-    saveState(); // バックグラウンド保存
+    await saveState();
   }
 }
 async function deleteTopic(topicId) {
   if (!confirm('この論点を削除しますか？')) return;
   const m = getCurrentMeeting();
   m.topics = (m.topics || []).filter(t => t.id !== topicId);
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 async function addTopicComment(topicId) {
@@ -2916,7 +3075,7 @@ async function addTopicComment(topicId) {
     authorId: state.currentUserId,
     text
   });
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 async function updateTopicComment(topicId, commentId, value) {
@@ -2926,7 +3085,7 @@ async function updateTopicComment(topicId, commentId, value) {
   const c = (t.comments || []).find(x => x.id === commentId);
   if (c) {
     c.text = value;
-    saveState(); // バックグラウンド保存
+    await saveState();
   }
 }
 async function moveTopic(topicId, dir) {
@@ -2939,7 +3098,7 @@ async function moveTopic(topicId, dir) {
   topics[idx] = topics[newIdx];
   topics[newIdx] = tmp;
   m.topics = topics;
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 
@@ -2976,6 +3135,12 @@ function renderMeeting() {
       <div class="page-intro-desc">
         前半は点灯シグナルからの定量レビュー、後半は5本柱進捗・論点の議論。<br>
         書記が逐語、議長役が結論・アクションを担当する分業を想定しています。
+      </div>
+      <div style="margin-top: 12px;">
+        <button class="btn btn-secondary" onclick="openMeetingSummaryModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          今日のまとめ（議事録サマリー）
+        </button>
       </div>
     </div>
 
@@ -3185,7 +3350,7 @@ async function updateSignalDiscussion(signalId, field, value) {
   const m = getCurrentMeeting();
   if (!m.signalDiscussions[signalId]) m.signalDiscussions[signalId] = { transcript: '', conclusion: '', actions: [] };
   m.signalDiscussions[signalId][field] = value;
-  saveState(); // バックグラウンド保存
+  await saveState();
 }
 
 async function toggleAgendaDone(type, id) {
@@ -3197,8 +3362,96 @@ async function toggleAgendaDone(type, id) {
     const t = (m.topics || []).find(x => x.id === id);
     if (t) t.done = !t.done;
   }
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
+}
+
+// ============================================================
+// ④ 議事録サマリーモーダル
+// ============================================================
+function openMeetingSummaryModal() {
+  const m = getCurrentMeeting();
+  const effectiveThemesMtg = (state && state.customSignals) ? getEffectiveSignalThemes() : SIGNAL_THEMES;
+  const litSignals = [];
+  for (const theme of effectiveThemesMtg) {
+    for (const sig of theme.signals) {
+      if (sig._deleted) continue;
+      const data = m.signals[sig.id];
+      if (!data) continue;
+      if ((data.state === 'yes' || data.state === 'unknown') && data.discussInMeeting !== false) {
+        const disc = (m.signalDiscussions || {})[sig.id] || {};
+        litSignals.push({ sig, theme, disc });
+      }
+    }
+  }
+  const topics = m.topics || [];
+  const actions = state.actions.filter(a => a.meetingId === state.currentMeetingId);
+
+  const signalRows = litSignals.map(({ sig, theme, disc }) => `
+    <div class="log-item">
+      <div class="log-item-title" style="color:var(--accent-ink);">[${theme.num}] ${escapeHtml(sig.text)}</div>
+      ${disc.conclusion
+        ? `<div class="log-item-comment"><strong>結論：</strong>${escapeHtml(disc.conclusion)}</div>`
+        : `<div class="log-item-comment" style="color:var(--ink-300);font-style:italic;">結論未記入</div>`}
+    </div>
+  `).join('');
+
+  const topicRows = topics.map(t => `
+    <div class="log-item">
+      <div class="log-item-title">${escapeHtml(t.title || '（無題）')} <span style="font-weight:400;font-size:11px;color:var(--ink-400);">— ${escapeHtml(getPerson(t.authorId).name)}</span></div>
+      ${t.conclusion
+        ? `<div class="log-item-comment"><strong>結論：</strong>${escapeHtml(t.conclusion)}</div>`
+        : `<div class="log-item-comment" style="color:var(--ink-300);font-style:italic;">結論未記入</div>`}
+    </div>
+  `).join('');
+
+  const actionRows = actions.length === 0
+    ? '<div style="color:var(--ink-400);font-size:13px;">なし</div>'
+    : actions.map(a => {
+        const pill = a.status === 'done'
+          ? '<span class="pill pill-success">完了</span>'
+          : '<span class="pill pill-todo">未着手</span>';
+        return `<div class="log-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${pill}
+          <span style="font-weight:600;font-size:13px;flex:1;">${escapeHtml(a.title)}</span>
+          <span style="font-size:11px;color:var(--ink-500);">${escapeHtml(getPerson(a.assigneeId).name)} ／ ${formatDateShort(a.deadline)}</span>
+        </div>`;
+      }).join('');
+
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:680px;">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">今日のまとめ</div>
+            <div style="font-size:11px;color:var(--ink-400);margin-top:2px;font-family:var(--font-mono);">${escapeHtml(m.title)} — ${formatDate(m.date)}</div>
+          </div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          ${litSignals.length > 0 ? `
+            <div class="log-section">
+              <div class="log-section-title">定量レビュー（${litSignals.length}件）</div>
+              ${signalRows}
+            </div>
+          ` : ''}
+          ${topics.length > 0 ? `
+            <div class="log-section">
+              <div class="log-section-title">論点（${topics.length}件）</div>
+              ${topicRows}
+            </div>
+          ` : ''}
+          <div class="log-section">
+            <div class="log-section-title">アクション（${actions.length}件）</div>
+            ${actionRows}
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // ============================================================
@@ -3232,7 +3485,7 @@ function openAddActionModal(type, id, label) {
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               ${PERSONS.map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
-                  <input type="radio" name="act-assignee" value="${p.id}" ${p.id === 'yama' ? 'checked' : ''}>
+                  <input type="radio" name="act-assignee" value="${p.id}" ${p.id === state.currentUserId ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
                   <span style="font-size: 13px;">${escapeHtml(p.name)}</span>
                 </label>
@@ -3281,7 +3534,7 @@ async function confirmAddAction() {
       t.actions.push(newAction.id);
     }
   }
-  saveState(); // バックグラウンド保存
+  await saveState();
   closeModal();
   renderAll();
 }
@@ -3289,6 +3542,57 @@ async function confirmAddAction() {
 // ============================================================
 // 定例作成・完了モーダル
 // ============================================================
+function openMeetingSettingsModal() {
+  const s = (state.meetingSettings) || { intervalWeeks: 1, dayOfWeek: 5 };
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:420px;">
+        <div class="modal-head">
+          <div class="modal-title">開催周期を設定</div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">開催曜日</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${days.map((d,i) => `
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 12px;border:1px solid var(--ink-200);border-radius:var(--radius);cursor:pointer;font-size:13px;${s.dayOfWeek===i?'background:var(--ink-900);color:var(--paper);':''}">
+                  <input type="radio" name="mtg-day" value="${i}" ${s.dayOfWeek===i?'checked':''} style="display:none;">
+                  ${d}曜
+                </label>
+              `).join('')}
+            </div>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">開催頻度</div>
+            <select class="input" id="mtg-interval">
+              <option value="1" ${s.intervalWeeks===1?'selected':''}>毎週</option>
+              <option value="2" ${s.intervalWeeks===2?'selected':''}>隔週（2週に1回）</option>
+              <option value="4" ${s.intervalWeeks===4?'selected':''}>月次（4週に1回）</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmMeetingSettings()">保存</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmMeetingSettings() {
+  const dayEl = document.querySelector('input[name="mtg-day"]:checked');
+  const intervalEl = document.getElementById('mtg-interval');
+  if (!state.meetingSettings) state.meetingSettings = {};
+  state.meetingSettings.dayOfWeek = dayEl ? parseInt(dayEl.value) : 5;
+  state.meetingSettings.intervalWeeks = parseInt(intervalEl.value) || 1;
+  await saveState();
+  closeModal();
+  renderAll();
+}
+
 function openCreateMeetingModal() {
   document.getElementById('modal-container').innerHTML = `
     <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
@@ -3304,7 +3608,7 @@ function openCreateMeetingModal() {
           </div>
           <div class="modal-field">
             <div class="field-label">開催日</div>
-            <input type="date" class="input" id="new-mtg-date" value="${getNextFriday()}">
+            <input type="date" class="input" id="new-mtg-date" value="${getNextMeetingDate()}">
           </div>
         </div>
         <div class="modal-foot">
@@ -3324,7 +3628,7 @@ async function confirmCreateMeeting() {
     signals: {}, freeNumberComment: '', pillarUpdates: {}, topics: [], signalDiscussions: {}
   };
   state.currentMeetingId = id;
-  saveState(); // バックグラウンド保存
+  await saveState();
   closeModal();
   renderAll();
 }
@@ -3360,7 +3664,7 @@ async function confirmCompleteMeeting() {
       a.carryoverCount = (a.carryoverCount || 0) + 1;
     }
   });
-  saveState(); // バックグラウンド保存
+  await saveState();
   closeModal();
   renderAll();
 }
@@ -3374,16 +3678,19 @@ function closeModal() {
 // アクション一覧
 // ============================================================
 function renderActions() {
-  const filters = [
+  const statusFilters = [
     { id: 'all', label: 'すべて' },
     { id: 'todo', label: '未着手' },
     { id: 'in_progress', label: '進行中' },
     { id: 'overdue', label: '期限超過', danger: true },
     { id: 'done', label: '完了' }
   ];
+  // 担当者フィルタ: 'all' or person id
+  if (typeof actionAssigneeFilter === 'undefined') window.actionAssigneeFilter = 'all';
   let filtered = state.actions;
   if (actionFilter === 'overdue') filtered = state.actions.filter(a => isOverdue(a));
   else if (actionFilter !== 'all') filtered = state.actions.filter(a => a.status === actionFilter);
+  if (actionAssigneeFilter !== 'all') filtered = filtered.filter(a => a.assigneeId === actionAssigneeFilter);
   filtered = [...filtered].sort((a, b) => {
     const aO = isOverdue(a) ? 0 : 1;
     const bO = isOverdue(b) ? 0 : 1;
@@ -3400,8 +3707,15 @@ function renderActions() {
       </div>
     </div>
 
-    <div class="filter-pills">
-      ${filters.map(f => {
+    <div style="margin-bottom: 14px;">
+      <button class="btn btn-primary btn-sm" onclick="openAddActionFromActionsPage()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        アクションを追加
+      </button>
+    </div>
+
+    <div class="filter-pills" style="margin-bottom:6px;">
+      ${statusFilters.map(f => {
         let count = state.actions.length;
         if (f.id === 'overdue') count = state.actions.filter(a => isOverdue(a)).length;
         else if (f.id !== 'all') count = state.actions.filter(a => a.status === f.id).length;
@@ -3413,6 +3727,30 @@ function renderActions() {
           </button>
         `;
       }).join('')}
+    </div>
+    <div class="filter-pills" style="margin-bottom:14px;">
+      <button class="filter-pill ${actionAssigneeFilter === 'all' ? 'active' : ''}" onclick="setActionAssigneeFilter('all')">
+        全員<span class="count">${state.actions.length}</span>
+      </button>
+      ${PERSONS.filter(p => p.id !== 'other').map(p => {
+        const cnt = state.actions.filter(a => a.assigneeId === p.id).length;
+        return `
+          <button class="filter-pill ${actionAssigneeFilter === p.id ? 'active' : ''}" onclick="setActionAssigneeFilter('${p.id}')">
+            <div class="avatar avatar-xs ${p.avatarClass}" style="width:14px;height:14px;font-size:8px;flex-shrink:0;">${p.initial}</div>
+            ${escapeHtml(p.name)}<span class="count">${cnt}</span>
+          </button>
+        `;
+      }).join('')}
+    </div>
+
+    <div id="bulk-action-bar" style="display:${selectedActions.size > 0 ? 'flex' : 'none'}; margin-bottom:12px; padding:10px 14px; background:var(--accent-fog-soft); border:1px solid var(--ink-200); border-radius:var(--radius); align-items:center; gap:10px; flex-wrap:wrap;">
+      <span id="bulk-selected-count" style="font-size:13px; font-weight:600; color:var(--accent-fog);">0件選択中</span>
+      <button class="btn btn-ghost btn-sm" onclick="selectAllActions()" style="font-size:12px;">すべて選択</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearActionSelection()" style="font-size:12px;">選択解除</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSelectedActions()" style="margin-left:auto; font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        選択したアクションを削除
+      </button>
     </div>
 
     ${filtered.length === 0 ? `
@@ -3430,14 +3768,19 @@ function renderActions() {
 
 function renderActionRow(a) {
   const overdue = isOverdue(a);
+  const daysLeft = daysUntil(a.deadline);
+  const nearDue = !overdue && a.status !== 'done' && daysLeft !== null && daysLeft >= 0 && daysLeft <= 3;
   let pill;
   if (overdue) pill = `<span class="pill pill-danger"><span class="pill-dot pill-dot-danger"></span>${a.carryoverCount}回持ち越し</span>`;
   else if (a.status === 'done') pill = '<span class="pill pill-success"><span class="pill-dot pill-dot-success"></span>完了</span>';
+  else if (nearDue) pill = `<span class="pill pill-warn"><span class="pill-dot" style="background:var(--accent-gold);"></span>${daysLeft === 0 ? '今日期限' : daysLeft + '日後'}</span>`;
   else if (a.status === 'in_progress') pill = '<span class="pill pill-info">進行中</span>';
   else pill = '<span class="pill pill-todo"><span class="pill-dot pill-dot-todo"></span>未着手</span>';
 
+  const isChecked = selectedActions.has(a.id);
   return `
-    <div class="action-row" style="grid-template-columns: auto 1fr auto auto auto;">
+    <div class="action-row ${nearDue ? 'near-due' : ''}" style="grid-template-columns: 20px auto 1fr auto auto auto;" id="action-row-${a.id}">
+      <input type="checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent-ink);" ${isChecked ? 'checked' : ''} onchange="toggleActionSelect('${a.id}', this.checked)">
       ${pill}
       <div>
         <div class="action-title ${a.status === 'done' ? 'done' : ''}">${escapeHtml(a.title)}</div>
@@ -3466,13 +3809,57 @@ function renderActionRow(a) {
 
 function setActionFilter(f) {
   actionFilter = f;
+  selectedActions.clear();
   renderPage();
+}
+
+function setActionAssigneeFilter(id) {
+  window.actionAssigneeFilter = id;
+  selectedActions.clear();
+  renderPage();
+}
+
+function toggleActionSelect(actionId, checked) {
+  if (checked) selectedActions.add(actionId);
+  else selectedActions.delete(actionId);
+  // バーの表示更新（再描画なしで軽量に）
+  const bar = document.getElementById('bulk-action-bar');
+  const countEl = document.getElementById('bulk-selected-count');
+  if (bar) bar.style.display = selectedActions.size > 0 ? 'flex' : 'none';
+  if (countEl) countEl.textContent = selectedActions.size + '件選択中';
+}
+
+function selectAllActions() {
+  let filtered = state.actions;
+  if (actionFilter === 'overdue') filtered = state.actions.filter(a => isOverdue(a));
+  else if (actionFilter !== 'all') filtered = state.actions.filter(a => a.status === actionFilter);
+  filtered.forEach(a => selectedActions.add(a.id));
+  renderPage();
+}
+
+function clearActionSelection() {
+  selectedActions.clear();
+  renderPage();
+}
+
+async function deleteSelectedActions() {
+  if (selectedActions.size === 0) return;
+  if (!confirm(selectedActions.size + '件のアクションを削除しますか？')) return;
+  state.actions = state.actions.filter(a => !selectedActions.has(a.id));
+  selectedActions.clear();
+  await saveState();
+  renderAll();
 }
 
 async function updateActionStatus(actionId, newStatus) {
   const a = state.actions.find(x => x.id === actionId);
   if (a) {
+    const wasOverdue = isOverdue(a);
     a.status = newStatus;
+    // 完了に戻す場合は持ち越し回数をリセット
+    if (newStatus === 'done') {
+      a.carryoverCount = 0;
+    }
     await saveState();
     renderAll();
   }
@@ -3533,7 +3920,7 @@ async function confirmEditAction(actionId) {
   a.title = title;
   a.assigneeId = assigneeId;
   a.deadline = deadline;
-  saveState(); // バックグラウンド保存
+  await saveState();
   closeModal();
   renderAll();
 }
@@ -3541,15 +3928,264 @@ async function confirmEditAction(actionId) {
 async function deleteAction(actionId) {
   if (!confirm('このアクションを削除しますか？')) return;
   state.actions = state.actions.filter(x => x.id !== actionId);
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderAll();
 }
 
 
 // ============================================================
+// アクション画面からの直接追加
+// ============================================================
+function openAddActionFromActionsPage() {
+  const defaultDeadline = new Date();
+  defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+  const dStr = defaultDeadline.toISOString().slice(0,10);
+  const cur = state.currentUserId;
+
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">アクションを追加</div>
+            <div style="font-size: 11px; color: var(--ink-400); margin-top: 2px;">手動追加（定例外）</div>
+          </div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">アクション内容</div>
+            <input type="text" class="input" id="manual-act-title" placeholder="例：取引先への確認連絡" autofocus>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">担当者</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              ${PERSONS.map(p => `
+                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
+                  <input type="radio" name="manual-act-assignee" value="${p.id}" ${p.id === cur ? 'checked' : ''}>
+                  <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
+                  <span style="font-size: 13px;">${escapeHtml(p.name)}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">期限</div>
+            <input type="date" class="input" id="manual-act-deadline" value="${dStr}">
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmAddActionManual()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            追加
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmAddActionManual() {
+  const title = document.getElementById('manual-act-title').value.trim();
+  if (!title) { alert('アクション内容を入力してください'); return; }
+  const assigneeEl = document.querySelector('input[name="manual-act-assignee"]:checked');
+  if (!assigneeEl) { alert('担当者を選択してください'); return; }
+  const deadline = document.getElementById('manual-act-deadline').value;
+  if (!deadline) { alert('期限を入力してください'); return; }
+
+  state.actions.push({
+    id: 'act_' + Date.now(),
+    title,
+    assigneeId: assigneeEl.value,
+    deadline,
+    status: 'todo',
+    carryoverCount: 0,
+    source: 'manual',
+    sourceLabel: '手動追加',
+    meetingId: state.currentMeetingId,
+  });
+  await saveState();
+  closeModal();
+  renderAll();
+}
+
+// ============================================================
 // シグナル管理画面
 // ============================================================
 let signalAdminState = { expandedTheme: null, editingSignal: null };
+
+// ============================================================
+// ⑨ メンバー管理画面
+// ============================================================
+function renderMemberAdmin() {
+  const effectivePersons = getEffectivePersons();
+  return `
+    <div class="page-intro">
+      <div class="page-intro-eyebrow">SETTINGS</div>
+      <div class="page-intro-title">メンバー管理</div>
+      <div class="page-intro-desc">
+        役員メンバーの名前・頭文字・カラーを管理します。変更はすべての画面に即時反映されます。
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      ${effectivePersons.filter(p => p.id !== 'other').map(p => `
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--rule-soft);">
+          <div class="avatar ${p.avatarClass}" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">${escapeHtml(p.initial)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;color:var(--ink-900);">${escapeHtml(p.name)}</div>
+            <div style="font-size:11px;color:var(--ink-400);margin-top:1px;">${p._custom ? 'カスタム追加' : 'デフォルト'}</div>
+          </div>
+          <button class="btn-icon-edit" onclick="openEditMemberModal('${p.id}')" title="編集">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          ${p._custom ? `
+            <button class="btn-icon-delete" onclick="deleteMember('${p.id}')" title="削除">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+
+    <button class="btn btn-secondary" onclick="openAddMemberModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      メンバーを追加
+    </button>
+  `;
+}
+
+function getEffectivePersons() {
+  const overrides = state.memberOverrides || {};
+  const custom = state.customMembers || [];
+  const base = PERSONS.map(p => {
+    const ov = overrides[p.id];
+    return ov ? { ...p, ...ov } : p;
+  });
+  return [...base, ...custom];
+}
+
+// getPerson をオーバーライド対応版に（既存定義の後に上書き）
+const _origGetPerson = getPerson;
+getPerson = function(id) {
+  const effective = getEffectivePersons();
+  return effective.find(p => p.id === id) || { name: '—', initial: '?', avatarClass: 'avatar-1' };
+};
+
+function openAddMemberModal() {
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:420px;">
+        <div class="modal-head">
+          <div class="modal-title">メンバーを追加</div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">名前</div>
+            <input type="text" class="input" id="new-member-name" placeholder="例：田中さん" autofocus>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">頭文字（1〜2文字）</div>
+            <input type="text" class="input" id="new-member-initial" placeholder="例：田" maxlength="2">
+          </div>
+          <div class="modal-field">
+            <div class="field-label">アバターカラー</div>
+            <div style="display:flex;gap:8px;">
+              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5'].map((cls,i) => `
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="radio" name="new-member-avatar" value="${cls}" ${i===0?'checked':''}>
+                  <div class="avatar ${cls}" style="width:28px;height:28px;font-size:11px;">A</div>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmAddMember()">追加</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmAddMember() {
+  const name = document.getElementById('new-member-name').value.trim();
+  if (!name) { alert('名前を入力してください'); return; }
+  const initial = document.getElementById('new-member-initial').value.trim() || name[0];
+  const avatarClass = document.querySelector('input[name="new-member-avatar"]:checked').value;
+  if (!state.customMembers) state.customMembers = [];
+  state.customMembers.push({ id: 'member_' + Date.now(), name, initial, avatarClass, role: '', _custom: true });
+  await saveState();
+  closeModal();
+  renderAll();
+}
+
+function openEditMemberModal(memberId) {
+  const p = getPerson(memberId);
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:420px;">
+        <div class="modal-head">
+          <div class="modal-title">メンバーを編集</div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">名前</div>
+            <input type="text" class="input" id="edit-member-name" value="${escapeHtml(p.name)}" autofocus>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">頭文字（1〜2文字）</div>
+            <input type="text" class="input" id="edit-member-initial" value="${escapeHtml(p.initial)}" maxlength="2">
+          </div>
+          <div class="modal-field">
+            <div class="field-label">アバターカラー</div>
+            <div style="display:flex;gap:8px;">
+              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5'].map(cls => `
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="radio" name="edit-member-avatar" value="${cls}" ${p.avatarClass===cls?'checked':''}>
+                  <div class="avatar ${cls}" style="width:28px;height:28px;font-size:11px;">A</div>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmEditMember('${memberId}')">保存</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmEditMember(memberId) {
+  const name = document.getElementById('edit-member-name').value.trim();
+  if (!name) { alert('名前を入力してください'); return; }
+  const initial = document.getElementById('edit-member-initial').value.trim() || name[0];
+  const avatarClass = document.querySelector('input[name="edit-member-avatar"]:checked').value;
+  const isCustom = (state.customMembers || []).some(m => m.id === memberId);
+  if (isCustom) {
+    const cm = state.customMembers.find(m => m.id === memberId);
+    if (cm) { cm.name = name; cm.initial = initial; cm.avatarClass = avatarClass; }
+  } else {
+    if (!state.memberOverrides) state.memberOverrides = {};
+    state.memberOverrides[memberId] = { name, initial, avatarClass };
+  }
+  await saveState();
+  closeModal();
+  renderAll();
+}
+
+async function deleteMember(memberId) {
+  if (!confirm('このメンバーを削除しますか？')) return;
+  state.customMembers = (state.customMembers || []).filter(m => m.id !== memberId);
+  await saveState();
+  renderAll();
+}
 
 function renderSignalAdmin() {
   // customSignals を state に保存
@@ -3639,7 +4275,7 @@ async function deleteCustomSignal(themeId, signalId) {
       state.customSignals[themeId].deleted.push(signalId);
     }
   }
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 
@@ -3652,14 +4288,14 @@ async function addCustomSignal(themeId) {
   if (!state.customSignals[themeId].added) state.customSignals[themeId].added = [];
   const newId = 'custom_' + themeId + '_' + Date.now();
   state.customSignals[themeId].added.push({ id: newId, text });
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 
 async function resetCustomSignals() {
   if (!confirm('シグナルのカスタマイズをすべてリセットしますか？追加・削除した変更が元に戻ります。')) return;
   state.customSignals = {};
-  saveState(); // バックグラウンド保存
+  await saveState();
   renderPage();
 }
 
@@ -3694,12 +4330,12 @@ function renderLog() {
           const pc = Object.keys(m.pillarUpdates || {}).length;
           const ac = state.actions.filter(a => a.meetingId === m.id).length;
           return `
-            <div class="log-entry" onclick="openLogModal('${m.id}')">
-              <div class="log-date-block">
+            <div class="log-entry" style="cursor:default;">
+              <div class="log-date-block" style="cursor:pointer;" onclick="openLogModal('${m.id}')">
                 <div class="log-date-mon">${d.mon}</div>
                 <div class="log-date-day">${d.day}</div>
               </div>
-              <div>
+              <div style="cursor:pointer;flex:1;" onclick="openLogModal('${m.id}')">
                 <div class="log-title">${escapeHtml(m.title)}</div>
                 <div class="log-meta">
                   <span class="log-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M12 2c0 6-6 8-6 14a6 6 0 0 0 12 0c0-6-6-8-6-14z"/></svg>点灯${lit}</span>
@@ -3708,7 +4344,15 @@ function renderLog() {
                   <span class="log-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M3 17h6M3 21h6M13 5h8M13 9h5M13 17h8M13 21h5"/><polyline points="5 7 6 8 8 6"/></svg>アクション${ac}</span>
                 </div>
               </div>
-              <span style="display:inline-flex;align-items:center;color:var(--ink-300);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <button class="btn-icon-edit" onclick="openEditLogModal('${m.id}')" title="タイトルを編集">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon-delete" onclick="deleteLog('${m.id}')" title="ログを削除">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+                <span style="display:inline-flex;align-items:center;color:var(--ink-300);cursor:pointer;" onclick="openLogModal('${m.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+              </div>
             </div>
           `;
         }).join('')}
@@ -3796,38 +4440,166 @@ function openLogModal(meetingId) {
           </div>
 
           <div class="log-section">
-            <div class="log-section-title">アクション（${actions.length}件）</div>
+            <div class="log-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+              アクション（${actions.length}件）
+              <button class="btn btn-ghost btn-sm" onclick="openAddLogAction('${meetingId}')" style="font-size:11px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:inline;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
+              </button>
+            </div>
             ${actions.length === 0 ? '<div style="color: var(--ink-400); font-size: 13px;">なし</div>' :
-              actions.map(a => {
-                const overdue = isOverdue(a);
-                const pill = a.status === 'done' ? '<span class="pill pill-success">完了</span>'
-                  : overdue ? '<span class="pill pill-danger">超過</span>'
-                  : a.status === 'in_progress' ? '<span class="pill pill-info">進行中</span>'
-                  : '<span class="pill pill-todo">未着手</span>';
-                return `
-                  <div class="log-item">
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                      ${pill}
-                      <span style="font-weight: 600; font-size: 13px;">${escapeHtml(a.title)}</span>
-                    </div>
-                    <div style="font-size: 11px; color: var(--ink-500); margin-top: 4px; padding-left: 4px;">
-                      ${escapeHtml(getPerson(a.assigneeId).name)} ・ 期限 ${formatDateShort(a.deadline)}
-                    </div>
-                  </div>
-                `;
-              }).join('')
+              actions.map(a => `
+                <div class="log-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <select onchange="updateLogActionStatus('${a.id}', this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink-700);cursor:pointer;font-family:inherit;">
+                    <option value="todo" ${a.status==='todo'?'selected':''}>未着手</option>
+                    <option value="in_progress" ${a.status==='in_progress'?'selected':''}>進行中</option>
+                    <option value="done" ${a.status==='done'?'selected':''}>完了</option>
+                  </select>
+                  <span style="font-weight: 600; font-size: 13px; flex:1;">${escapeHtml(a.title)}</span>
+                  <span style="font-size: 11px; color: var(--ink-500);">${escapeHtml(getPerson(a.assigneeId).name)} ・ ${formatDateShort(a.deadline)}</span>
+                </div>
+              `).join('')
             }
           </div>
 
         </div>
         <div class="modal-foot">
-          <button class="btn btn-primary" onclick="closeModal()">閉じる</button>
+          <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
         </div>
       </div>
     </div>
   `;
 }
 
+
+// ============================================================
+// ⑥ 過去ログ内アクション操作
+// ============================================================
+async function updateLogActionStatus(actionId, newStatus) {
+  const a = state.actions.find(x => x.id === actionId);
+  if (!a) return;
+  a.status = newStatus;
+  if (newStatus === 'done') a.carryoverCount = 0;
+  await saveState();
+  openLogModal(a.meetingId);
+  renderAll();
+}
+
+function openAddLogAction(meetingId) {
+  const defaultDeadline = new Date();
+  defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+  const dStr = defaultDeadline.toISOString().slice(0,10);
+  const cur = state.currentUserId;
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head">
+          <div class="modal-title">アクションを追加（過去ログ）</div>
+          <button class="modal-close" onclick="openLogModal('${meetingId}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">アクション内容</div>
+            <input type="text" class="input" id="log-act-title" autofocus>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">担当者</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${PERSONS.filter(p=>p.id!=='other').map(p => `
+                <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ink-200);border-radius:var(--radius);cursor:pointer;flex:1;min-width:100px;">
+                  <input type="radio" name="log-act-assignee" value="${p.id}" ${p.id===cur?'checked':''}>
+                  <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
+                  <span style="font-size:13px;">${escapeHtml(p.name)}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">期限</div>
+            <input type="date" class="input" id="log-act-deadline" value="${dStr}">
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="openLogModal('${meetingId}')">戻る</button>
+          <button class="btn btn-primary" onclick="confirmAddLogAction('${meetingId}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmAddLogAction(meetingId) {
+  const title = document.getElementById('log-act-title').value.trim();
+  if (!title) { alert('アクション内容を入力してください'); return; }
+  const assigneeEl = document.querySelector('input[name="log-act-assignee"]:checked');
+  if (!assigneeEl) { alert('担当者を選択してください'); return; }
+  const deadline = document.getElementById('log-act-deadline').value;
+  if (!deadline) { alert('期限を入力してください'); return; }
+  state.actions.push({
+    id: 'act_' + Date.now(),
+    title, assigneeId: assigneeEl.value, deadline,
+    status: 'todo', carryoverCount: 0,
+    source: 'manual', sourceLabel: '過去ログ追加',
+    meetingId,
+  });
+  await saveState();
+  openLogModal(meetingId);
+  renderAll();
+}
+
+// ============================================================
+// 過去ログ 削除・編集
+// ============================================================
+async function deleteLog(meetingId) {
+  if (!confirm('この過去ログを削除しますか？\n関連するアクションも削除されます。')) return;
+  delete state.meetings[meetingId];
+  state.actions = state.actions.filter(a => a.meetingId !== meetingId);
+  await saveState();
+  renderAll();
+}
+
+function openEditLogModal(meetingId) {
+  const m = state.meetings[meetingId];
+  if (!m) return;
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:480px;">
+        <div class="modal-head">
+          <div class="modal-title">ログを編集</div>
+          <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">タイトル</div>
+            <input type="text" class="input" id="edit-log-title" value="${escapeHtml(m.title)}" autofocus>
+          </div>
+          <div class="modal-field">
+            <div class="field-label">開催日</div>
+            <input type="date" class="input" id="edit-log-date" value="${m.date}">
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmEditLog('${meetingId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmEditLog(meetingId) {
+  const m = state.meetings[meetingId];
+  if (!m) return;
+  const title = document.getElementById('edit-log-title').value.trim();
+  const date = document.getElementById('edit-log-date').value;
+  if (!title) { alert('タイトルを入力してください'); return; }
+  m.title = title;
+  if (date) m.date = date;
+  await saveState();
+  closeModal();
+  renderAll();
+}
 
 // ============================================================
 // 自動同期（2段階ポーリング）
