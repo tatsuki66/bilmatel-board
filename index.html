@@ -783,6 +783,15 @@
   .btn-secondary:hover { background: var(--paper-2); border-color: var(--ink-300); }
   .btn-ghost { background: transparent; color: var(--ink-500); }
   .btn-ghost:hover { background: var(--paper-2); color: var(--ink-900); }
+  .btn-icon-subtle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 20px;
+    border: none; background: transparent;
+    color: var(--ink-300); cursor: pointer; border-radius: var(--radius-sm);
+    transition: all 0.12s; padding: 0;
+  }
+  .btn-icon-subtle:hover:not(:disabled) { background: var(--ink-100); color: var(--ink-600); }
+  .btn-icon-subtle:disabled { cursor: default; }
   .btn-icon-delete, .btn-icon-edit, .btn-icon-move {
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; padding: 0;
@@ -4188,9 +4197,6 @@ async function deleteMember(memberId) {
 }
 
 function renderSignalAdmin() {
-  // customSignals を state に保存
-  const custom = state.customSignals || {};
-  // 実効シグナルリスト: SIGNAL_THEMES + カスタム変更
   const effectiveThemes = getEffectiveSignalThemes();
 
   return `
@@ -4198,41 +4204,62 @@ function renderSignalAdmin() {
       <div class="page-intro-eyebrow">SETTINGS</div>
       <div class="page-intro-title">シグナル管理</div>
       <div class="page-intro-desc">
-        定量モニタリングのシグナルをカスタマイズできます。不要なシグナルの削除・新しい観点の追加が可能です。<br>
+        定量モニタリングのシグナルをカスタマイズできます。編集・削除・並び替え・追加が可能です。<br>
         変更はすぐに定量モニタリング画面に反映されます。
       </div>
     </div>
 
-    ${effectiveThemes.map(theme => `
-      <div class="card" style="margin-bottom: 14px; overflow: visible;">
-        <div style="padding: 14px 20px; border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 12px; background: var(--paper-2);">
-          <div class="theme-icon ${theme.iconClass}">${getThemeSvg(theme.icon)}</div>
-          <div style="flex: 1;">
-            <div style="font-family: var(--font-serif); font-size: 14px; font-weight: 600; color: var(--ink-900);">${theme.num} ${escapeHtml(theme.name)}</div>
-            <div style="font-size: 11px; color: var(--ink-400); font-family: var(--font-mono);">${escapeHtml(theme.source)}</div>
+    ${effectiveThemes.map(theme => {
+      const activeSignals = theme.signals.filter(s => !s._deleted);
+      return `
+        <div class="card" style="margin-bottom: 14px; overflow: visible;">
+          <div style="padding: 14px 20px; border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 12px; background: var(--paper-2);">
+            <div class="theme-icon ${theme.iconClass}">${getThemeSvg(theme.icon)}</div>
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-serif); font-size: 14px; font-weight: 600; color: var(--ink-900);">${theme.num} ${escapeHtml(theme.name)}</div>
+              <div style="font-size: 11px; color: var(--ink-400); font-family: var(--font-mono);">${escapeHtml(theme.source)}</div>
+            </div>
+            <span style="font-size: 11px; color: var(--ink-500);">${activeSignals.length}件</span>
           </div>
-          <span style="font-size: 11px; color: var(--ink-500);">${theme.signals.filter(s => !s._deleted).length}件</span>
-        </div>
-        <div style="padding: 0 20px 12px;">
-          ${theme.signals.map(sig => sig._deleted ? '' : `
-            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px dashed var(--rule-soft);">
-              <div style="flex: 1; font-size: 13px; color: var(--ink-700); line-height: 1.5;">${escapeHtml(sig.text)}</div>
-              <button class="btn-icon-delete" onclick="deleteCustomSignal('${theme.id}', '${sig.id}')" title="このシグナルを削除">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <div style="padding: 0 20px 12px;">
+            ${activeSignals.map((sig, idx) => `
+              <div style="display: flex; align-items: center; gap: 6px; padding: 8px 0; border-bottom: 1px dashed var(--rule-soft);">
+                <!-- 上下ボタン -->
+                <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;">
+                  <button class="btn-icon-subtle" onclick="moveSignal('${theme.id}','${sig.id}',-1)"
+                    ${idx === 0 ? 'disabled style="opacity:0.25;"' : ''}
+                    title="上へ">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                  </button>
+                  <button class="btn-icon-subtle" onclick="moveSignal('${theme.id}','${sig.id}',1)"
+                    ${idx === activeSignals.length - 1 ? 'disabled style="opacity:0.25;"' : ''}
+                    title="下へ">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                </div>
+                <!-- テキスト -->
+                <div style="flex: 1; font-size: 13px; color: var(--ink-700); line-height: 1.5;">${escapeHtml(sig.text)}</div>
+                <!-- 編集・削除ボタン -->
+                <button class="btn-icon-edit" onclick="openEditSignalModal('${theme.id}','${sig.id}')" title="編集">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon-delete" onclick="deleteCustomSignal('${theme.id}','${sig.id}')" title="削除">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+              </div>
+            `).join('')}
+            <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+              <input type="text" class="input" placeholder="新しいシグナルを追加..." id="new-sig-${theme.id}"
+                style="flex: 1; font-size: 12px;"
+                onkeydown="if(event.key==='Enter') addCustomSignal('${theme.id}')">
+              <button class="btn btn-secondary btn-sm" onclick="addCustomSignal('${theme.id}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
               </button>
             </div>
-          `).join('')}
-          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
-            <input type="text" class="input" placeholder="新しいシグナルを追加..." id="new-sig-${theme.id}"
-              style="flex: 1; font-size: 12px;"
-              onkeydown="if(event.key==='Enter') addCustomSignal('${theme.id}')">
-            <button class="btn btn-secondary btn-sm" onclick="addCustomSignal('${theme.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
-            </button>
           </div>
         </div>
-      </div>
-    `).join('')}
+      `;
+    }).join('')}
 
     <div class="card-soft" style="margin-top: 20px; text-align: center;">
       <div style="font-size: 12px; color: var(--ink-500); margin-bottom: 10px;">カスタマイズをリセット（デフォルトのシグナルに戻す）</div>
@@ -4249,15 +4276,40 @@ function getEffectiveSignalThemes() {
     const themeCustom = custom[theme.id] || {};
     const deletedIds = new Set(themeCustom.deleted || []);
     const addedSignals = themeCustom.added || [];
+    const textOverrides = themeCustom.textOverrides || {};
+
+    // ベースシグナル（削除フラグ + テキスト上書き）
     const baseSignals = theme.signals.map(s => ({
       ...s,
+      text: textOverrides[s.id] !== undefined ? textOverrides[s.id] : s.text,
       _deleted: deletedIds.has(s.id)
     }));
-    const extraSignals = addedSignals.map(s => ({ ...s }));
-    return {
-      ...theme,
-      signals: [...baseSignals, ...extraSignals]
-    };
+    // 追加シグナル
+    const extraSignals = addedSignals.map(s => ({
+      ...s,
+      text: textOverrides[s.id] !== undefined ? textOverrides[s.id] : s.text,
+    }));
+
+    // 全シグナルをflat化（削除済み含む）
+    const allSignals = [...baseSignals, ...extraSignals];
+
+    // orderが保存されていれば並び替え（削除済みはそのまま末尾）
+    const order = themeCustom.order || [];
+    if (order.length > 0) {
+      const ordered = [];
+      // orderに従ってアクティブなものを並べる
+      for (const sid of order) {
+        const sig = allSignals.find(s => s.id === sid);
+        if (sig) ordered.push(sig);
+      }
+      // orderに含まれていないものを末尾に追加
+      for (const sig of allSignals) {
+        if (!order.includes(sig.id)) ordered.push(sig);
+      }
+      return { ...theme, signals: ordered };
+    }
+
+    return { ...theme, signals: allSignals };
   });
 }
 
@@ -4296,6 +4348,78 @@ async function resetCustomSignals() {
   if (!confirm('シグナルのカスタマイズをすべてリセットしますか？追加・削除した変更が元に戻ります。')) return;
   state.customSignals = {};
   await saveState();
+  renderPage();
+}
+
+// シグナルの上下移動
+async function moveSignal(themeId, signalId, direction) {
+  // 現在の実効順序を取得
+  const themes = getEffectiveSignalThemes();
+  const theme = themes.find(t => t.id === themeId);
+  if (!theme) return;
+  const activeSignals = theme.signals.filter(s => !s._deleted);
+  const idx = activeSignals.findIndex(s => s.id === signalId);
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= activeSignals.length) return;
+
+  // 入れ替え
+  const newOrder = activeSignals.map(s => s.id);
+  [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
+
+  if (!state.customSignals) state.customSignals = {};
+  if (!state.customSignals[themeId]) state.customSignals[themeId] = {};
+  state.customSignals[themeId].order = newOrder;
+  await saveState();
+  renderPage();
+}
+
+// シグナルのテキスト編集モーダル
+function openEditSignalModal(themeId, signalId) {
+  const themes = getEffectiveSignalThemes();
+  const theme = themes.find(t => t.id === themeId);
+  if (!theme) return;
+  const sig = theme.signals.find(s => s.id === signalId);
+  if (!sig) return;
+
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:520px;">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">シグナルを編集</div>
+            <div style="font-size:11px;color:var(--ink-400);margin-top:2px;">${theme.num} ${escapeHtml(theme.name)}</div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <div class="field-label">シグナルのテキスト</div>
+            <textarea class="textarea" id="edit-signal-text" style="min-height:80px;">${escapeHtml(sig.text)}</textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="confirmEditSignal('${themeId}','${signalId}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmEditSignal(themeId, signalId) {
+  const text = document.getElementById('edit-signal-text').value.trim();
+  if (!text) { alert('テキストを入力してください'); return; }
+  if (!state.customSignals) state.customSignals = {};
+  if (!state.customSignals[themeId]) state.customSignals[themeId] = {};
+  if (!state.customSignals[themeId].textOverrides) state.customSignals[themeId].textOverrides = {};
+  state.customSignals[themeId].textOverrides[signalId] = text;
+  await saveState();
+  closeModal();
   renderPage();
 }
 
