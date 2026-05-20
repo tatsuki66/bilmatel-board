@@ -1765,7 +1765,7 @@
        ============================================ -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">BILMATEL</div>
+      <div class="brand-mark">BUILMATEL</div>
       <div class="brand-name">役員定例<br>ボード</div>
       <div class="brand-sub">EXECUTIVE COUNCIL</div>
     </div>
@@ -1822,7 +1822,7 @@
   <div class="drawer" id="drawer" onclick="event.stopPropagation()">
     <div class="drawer-header">
       <div>
-        <div class="drawer-brand-mark">BILMATEL</div>
+        <div class="drawer-brand-mark">BUILMATEL</div>
         <div class="drawer-brand-name">役員定例<br>ボード</div>
       </div>
       <button class="drawer-close-btn" onclick="closeDrawer()">
@@ -1947,9 +1947,9 @@ const SIGNAL_THEMES = [
   }
 ];
 
-const STORAGE_KEY = 'bilmatel_board_state_v2';
+const STORAGE_KEY = 'builmatel_board_state_v2';
 const SHARED = true;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwFFYlvftzUsQlw6jXVLDTiPQPDP3DuhCsKioDHJfPOLsuUBRZjxUmUFV2qU_fP9IrZ1A/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyydUsNEdQJJ6eHQi_0xUFJ9yJb_RTRsuOHn2-UlbKw_wDjDrM04KrDPvodHFFvjaWWQQ/exec';
 
 // ============================================================
 // 日付ヘルパー
@@ -2144,9 +2144,12 @@ async function loadState() {
 async function saveState() {
   const json = JSON.stringify(state);
   try {
-    // GETパラメータでデータを送信（CORSプリフライト不要）
-    const url = GAS_URL + '?action=set&value=' + encodeURIComponent(json);
-    const res = await fetch(url, { mode: 'cors' });
+    // text/plain でPOST → CORSプリフライト不要、データサイズ制限なし
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ value: json }),
+    });
     const result = await res.json();
     if (!result.ok) throw new Error(result.error || 'save failed');
   } catch (e) {
