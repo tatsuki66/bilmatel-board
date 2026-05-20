@@ -1765,7 +1765,7 @@
        ============================================ -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">BUILMATEL</div>
+      <div class="brand-mark">BILMATEL</div>
       <div class="brand-name">役員定例<br>ボード</div>
       <div class="brand-sub">EXECUTIVE COUNCIL</div>
     </div>
@@ -1822,7 +1822,7 @@
   <div class="drawer" id="drawer" onclick="event.stopPropagation()">
     <div class="drawer-header">
       <div>
-        <div class="drawer-brand-mark">BUILMATEL</div>
+        <div class="drawer-brand-mark">BILMATEL</div>
         <div class="drawer-brand-name">役員定例<br>ボード</div>
       </div>
       <button class="drawer-close-btn" onclick="closeDrawer()">
@@ -1947,9 +1947,9 @@ const SIGNAL_THEMES = [
   }
 ];
 
-const STORAGE_KEY = 'builmatel_board_state_v2';
+const STORAGE_KEY = 'bilmatel_board_state_v2';
 const SHARED = true;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyydUsNEdQJJ6eHQi_0xUFJ9yJb_RTRsuOHn2-UlbKw_wDjDrM04KrDPvodHFFvjaWWQQ/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwFFYlvftzUsQlw6jXVLDTiPQPDP3DuhCsKioDHJfPOLsuUBRZjxUmUFV2qU_fP9IrZ1A/exec';
 
 // ============================================================
 // 日付ヘルパー
@@ -2143,24 +2143,35 @@ async function loadState() {
 }
 async function saveState() {
   const json = JSON.stringify(state);
+  // バックグラウンドで保存（呼び出し元はawaitしない）
+  const url = GAS_URL + '?action=set&value=' + encodeURIComponent(json);
+  setSyncStatus('syncing', '保存中...');
   try {
-    // text/plain でPOST → CORSプリフライト不要、データサイズ制限なし
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ value: json }),
-    });
+    const res = await fetch(url, { mode: 'cors' });
     const result = await res.json();
     if (!result.ok) throw new Error(result.error || 'save failed');
+    setSyncStatus('', '最終同期: ' + formatSyncTime());
   } catch (e) {
     console.error('GAS保存失敗:', e);
+    setSyncStatus('error', '保存失敗 - 再試行中...');
+    // 5秒後にリトライ
+    setTimeout(async () => {
+      try {
+        const res2 = await fetch(url, { mode: 'cors' });
+        const r2 = await res2.json();
+        if (r2.ok) setSyncStatus('', '最終同期: ' + formatSyncTime());
+        else setSyncStatus('error', '保存失敗（要確認）');
+      } catch(e2) {
+        setSyncStatus('error', '保存失敗（要確認）');
+      }
+    }, 5000);
   }
 }
 async function resetData() {
   closeModal();
   if (!confirm('すべてのデータを初期サンプルにリセットしますか？\n現在の入力内容は失われます。')) return;
   state = createSampleData();
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderAll();
 }
 
@@ -2636,7 +2647,7 @@ async function setSignal(signalId, newState) {
   } else {
     m.signals[signalId].state = newState;
   }
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderAll();
 }
 
@@ -2644,21 +2655,21 @@ async function updateSignalComment(signalId, value) {
   const m = getCurrentMeeting();
   if (!m.signals[signalId]) m.signals[signalId] = {};
   m.signals[signalId].comment = value;
-  await saveState();
+  saveState(); // バックグラウンド保存
 }
 
 async function setSignalDiscuss(signalId, value) {
   const m = getCurrentMeeting();
   if (!m.signals[signalId]) m.signals[signalId] = {};
   m.signals[signalId].discussInMeeting = value;
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
 async function updateFreeNumber(value) {
   const m = getCurrentMeeting();
   m.freeNumberComment = value;
-  await saveState();
+  saveState(); // バックグラウンド保存
 }
 
 // ============================================================
@@ -2835,7 +2846,7 @@ function renderQual() {
 
 async function setCurrentUser(id) {
   state.currentUserId = id;
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 function getPillarComments(m, pillarId) {
@@ -2860,7 +2871,7 @@ async function updatePillarComment(pillarId, value) {
   } else {
     m.pillarUpdates[pillarId] = [...comments, { authorId: cur, text: value }];
   }
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderSidebarNav();
   renderMobileNav();
 }
@@ -2874,7 +2885,7 @@ async function addTopic() {
     comments: [],
     transcript: '', conclusion: '', actions: []
   });
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 async function updateTopic(topicId, field, value) {
@@ -2882,14 +2893,14 @@ async function updateTopic(topicId, field, value) {
   const t = (m.topics || []).find(x => x.id === topicId);
   if (t) {
     t[field] = value;
-    await saveState();
+    saveState(); // バックグラウンド保存
   }
 }
 async function deleteTopic(topicId) {
   if (!confirm('この論点を削除しますか？')) return;
   const m = getCurrentMeeting();
   m.topics = (m.topics || []).filter(t => t.id !== topicId);
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 async function addTopicComment(topicId) {
@@ -2905,7 +2916,7 @@ async function addTopicComment(topicId) {
     authorId: state.currentUserId,
     text
   });
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 async function updateTopicComment(topicId, commentId, value) {
@@ -2915,7 +2926,7 @@ async function updateTopicComment(topicId, commentId, value) {
   const c = (t.comments || []).find(x => x.id === commentId);
   if (c) {
     c.text = value;
-    await saveState();
+    saveState(); // バックグラウンド保存
   }
 }
 async function moveTopic(topicId, dir) {
@@ -2928,7 +2939,7 @@ async function moveTopic(topicId, dir) {
   topics[idx] = topics[newIdx];
   topics[newIdx] = tmp;
   m.topics = topics;
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
@@ -3174,7 +3185,7 @@ async function updateSignalDiscussion(signalId, field, value) {
   const m = getCurrentMeeting();
   if (!m.signalDiscussions[signalId]) m.signalDiscussions[signalId] = { transcript: '', conclusion: '', actions: [] };
   m.signalDiscussions[signalId][field] = value;
-  await saveState();
+  saveState(); // バックグラウンド保存
 }
 
 async function toggleAgendaDone(type, id) {
@@ -3186,7 +3197,7 @@ async function toggleAgendaDone(type, id) {
     const t = (m.topics || []).find(x => x.id === id);
     if (t) t.done = !t.done;
   }
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
@@ -3270,7 +3281,7 @@ async function confirmAddAction() {
       t.actions.push(newAction.id);
     }
   }
-  await saveState();
+  saveState(); // バックグラウンド保存
   closeModal();
   renderAll();
 }
@@ -3313,7 +3324,7 @@ async function confirmCreateMeeting() {
     signals: {}, freeNumberComment: '', pillarUpdates: {}, topics: [], signalDiscussions: {}
   };
   state.currentMeetingId = id;
-  await saveState();
+  saveState(); // バックグラウンド保存
   closeModal();
   renderAll();
 }
@@ -3349,7 +3360,7 @@ async function confirmCompleteMeeting() {
       a.carryoverCount = (a.carryoverCount || 0) + 1;
     }
   });
-  await saveState();
+  saveState(); // バックグラウンド保存
   closeModal();
   renderAll();
 }
@@ -3522,7 +3533,7 @@ async function confirmEditAction(actionId) {
   a.title = title;
   a.assigneeId = assigneeId;
   a.deadline = deadline;
-  await saveState();
+  saveState(); // バックグラウンド保存
   closeModal();
   renderAll();
 }
@@ -3530,7 +3541,7 @@ async function confirmEditAction(actionId) {
 async function deleteAction(actionId) {
   if (!confirm('このアクションを削除しますか？')) return;
   state.actions = state.actions.filter(x => x.id !== actionId);
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderAll();
 }
 
@@ -3628,7 +3639,7 @@ async function deleteCustomSignal(themeId, signalId) {
       state.customSignals[themeId].deleted.push(signalId);
     }
   }
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
@@ -3641,14 +3652,14 @@ async function addCustomSignal(themeId) {
   if (!state.customSignals[themeId].added) state.customSignals[themeId].added = [];
   const newId = 'custom_' + themeId + '_' + Date.now();
   state.customSignals[themeId].added.push({ id: newId, text });
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
 async function resetCustomSignals() {
   if (!confirm('シグナルのカスタマイズをすべてリセットしますか？追加・削除した変更が元に戻ります。')) return;
   state.customSignals = {};
-  await saveState();
+  saveState(); // バックグラウンド保存
   renderPage();
 }
 
