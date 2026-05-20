@@ -2186,34 +2186,34 @@ function createSampleData() {
       }
     },
     actions: [
-      { id: 'act1', title: '外構営業の地域別担当割振りを確定', assigneeId: 'yama',
+      { id: 'act1', title: '外構営業の地域別担当割振りを確定', assigneeIds: ['yama'],
         deadline: '2026-05-09', status: 'overdue', carryoverCount: 2,
         source: 'pillar:p1', sourceLabel: '柱① 外構領域の強化', meetingId: 'mtg_carry' },
-      { id: 'act2', title: 'CAD見積効率化フェーズ2 発注判断', assigneeId: 'hira',
+      { id: 'act2', title: 'CAD見積効率化フェーズ2 発注判断', assigneeIds: ['hira'],
         deadline: '2026-05-15', status: 'overdue', carryoverCount: 1,
         source: 'pillar:p4', sourceLabel: '柱④ 見積・図面作成の効率化', meetingId: 'mtg_carry' },
-      { id: 'act3', title: '外構小型案件の単価分解資料作成', assigneeId: 'yama',
+      { id: 'act3', title: '外構小型案件の単価分解資料作成', assigneeIds: ['yama'],
         deadline: '2026-05-22', status: 'in_progress', carryoverCount: 0,
         source: 'signal:s1_1', sourceLabel: '定量① 売上・受注の動き', meetingId: lastMeetingId },
-      { id: 'act4', title: '地方拠点候補3エリアの市場規模調査', assigneeId: 'yama',
+      { id: 'act4', title: '地方拠点候補3エリアの市場規模調査', assigneeIds: ['yama'],
         deadline: '2026-05-30', status: 'in_progress', carryoverCount: 0,
         source: 'pillar:p2', sourceLabel: '柱② 地方案件の強化', meetingId: lastMeetingId },
-      { id: 'act5', title: '工務部メンバー1on1の月次開始', assigneeId: 'hira',
+      { id: 'act5', title: '工務部メンバー1on1の月次開始', assigneeIds: ['hira'],
         deadline: '2026-06-01', status: 'todo', carryoverCount: 0,
         source: 'pillar:p3', sourceLabel: '柱③ 工事案件数強化', meetingId: lastMeetingId },
-      { id: 'act6', title: 'HubSpot営業ダッシュボードのv2リリース', assigneeId: 'yama',
+      { id: 'act6', title: 'HubSpot営業ダッシュボードのv2リリース', assigneeIds: ['yama'],
         deadline: '2026-05-10', status: 'done', carryoverCount: 0,
         source: 'pillar:p5', sourceLabel: '柱⑤ HubSpot活用による受注率向上', meetingId: olderMeetingId },
-      { id: 'act7', title: '物流倉庫の夏場体制ヒアリング', assigneeId: 'hato',
+      { id: 'act7', title: '物流倉庫の夏場体制ヒアリング', assigneeIds: ['hato'],
         deadline: '2026-06-05', status: 'todo', carryoverCount: 0,
         source: 'topic:t1', sourceLabel: '物流体制の見直し', meetingId: lastMeetingId },
-      { id: 'act8', title: '工事カレンダーの6月以降の見える化', assigneeId: 'hira',
+      { id: 'act8', title: '工事カレンダーの6月以降の見える化', assigneeIds: ['hira'],
         deadline: '2026-05-25', status: 'in_progress', carryoverCount: 0,
         source: 'pillar:p3', sourceLabel: '柱③ 工事案件数強化', meetingId: lastMeetingId },
-      { id: 'act9', title: '失注理由のヒアリング深掘り', assigneeId: 'yama',
+      { id: 'act9', title: '失注理由のヒアリング深掘り', assigneeIds: ['yama'],
         deadline: '2026-05-22', status: 'todo', carryoverCount: 0,
         source: 'signal:s2_3', sourceLabel: '定量② 失注理由「価格」', meetingId: lastMeetingId },
-      { id: 'act10', title: 'CADフェーズ1検収サインアップ', assigneeId: 'hato',
+      { id: 'act10', title: 'CADフェーズ1検収サインアップ', assigneeIds: ['hato'],
         deadline: '2026-05-08', status: 'done', carryoverCount: 0,
         source: 'pillar:p4', sourceLabel: '柱④ 見積・図面作成の効率化', meetingId: olderMeetingId }
     ]
@@ -2277,6 +2277,22 @@ async function resetData() {
 function getCurrentMeeting() { return state.meetings[state.currentMeetingId]; }
 function getPerson(id) { return PERSONS.find(p => p.id === id) || { name: '—', initial: '?', avatarClass: 'avatar-1' }; }
 function getPillar(id) { return PILLARS.find(p => p.id === id) || null; }
+
+// 複数担当者のIDリストを名前文字列に変換（後方互換: assigneeId単数も対応）
+function getAssigneeIds(a) {
+  if (a.assigneeIds && Array.isArray(a.assigneeIds)) return a.assigneeIds;
+  if (a.assigneeId) return [a.assigneeId];
+  return [];
+}
+function getAssigneeNames(a) {
+  return getAssigneeIds(a).map(id => getPerson(id).name).join('・');
+}
+function renderAssigneeAvatars(a) {
+  return getAssigneeIds(a).map(id => {
+    const p = getPerson(id);
+    return `<div class="avatar avatar-xs ${p.avatarClass}" style="width:16px;height:16px;font-size:8px;flex-shrink:0;">${p.initial}</div>`;
+  }).join('');
+}
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -2635,7 +2651,7 @@ function renderHome() {
             <div>
               <div class="action-title">${escapeHtml(a.title)}</div>
               <div class="action-meta">
-                <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escapeHtml(getPerson(a.assigneeId).name)}</span>
+                <span>${renderAssigneeAvatars(a)}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px;margin-left:2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escapeHtml(getAssigneeNames(a))}</span>
                 <span class="meta-sep">·</span>
                 <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${formatDateShort(a.deadline)}</span>
                 <span class="meta-sep">·</span>
@@ -3349,7 +3365,7 @@ function renderInlineAction(actionId) {
       ${pill}
       <div style="flex: 1;">
         <div class="inline-action-text">${escapeHtml(a.title)}</div>
-        <div class="inline-action-meta">${escapeHtml(getPerson(a.assigneeId).name)} ・ 期限 ${formatDateShort(a.deadline)}</div>
+        <div class="inline-action-meta">${escapeHtml(getAssigneeNames(a))} ・ 期限 ${formatDateShort(a.deadline)}</div>
       </div>
     </div>
   `;
@@ -3423,7 +3439,7 @@ function openMeetingSummaryModal() {
         return `<div class="log-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           ${pill}
           <span style="font-weight:600;font-size:13px;flex:1;">${escapeHtml(a.title)}</span>
-          <span style="font-size:11px;color:var(--ink-500);">${escapeHtml(getPerson(a.assigneeId).name)} ／ ${formatDateShort(a.deadline)}</span>
+          <span style="font-size:11px;color:var(--ink-500);">${escapeHtml(getAssigneeNames(a))} ／ ${formatDateShort(a.deadline)}</span>
         </div>`;
       }).join('');
 
@@ -3494,7 +3510,7 @@ function openAddActionModal(type, id, label) {
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
-                  <input type="radio" name="act-assignee" value="${p.id}" ${p.id === state.currentUserId ? 'checked' : ''}>
+                  <input type="checkbox" name="act-assignee" value="${p.id}" ${p.id === state.currentUserId ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
                   <span style="font-size: 13px;">${escapeHtml(p.name)}</span>
                 </label>
@@ -3518,13 +3534,14 @@ function openAddActionModal(type, id, label) {
 async function confirmAddAction() {
   const title = document.getElementById('act-title').value.trim();
   if (!title) { alert('アクション内容を入力してください'); return; }
-  const assigneeId = document.querySelector('input[name="act-assignee"]:checked').value;
+  const assigneeIds = [...document.querySelectorAll('input[name="act-assignee"]:checked')].map(el => el.value);
+  if (assigneeIds.length === 0) { alert('担当者を1名以上選択してください'); return; }
   const deadline = document.getElementById('act-deadline').value;
   if (!deadline) { alert('期限を入力してください'); return; }
 
   const newAction = {
     id: 'act_' + Date.now(),
-    title, assigneeId, deadline, status: 'todo', carryoverCount: 0,
+    title, assigneeIds, deadline, status: 'todo', carryoverCount: 0,
     source: addActionContext.type + ':' + addActionContext.id,
     sourceLabel: addActionContext.label,
     meetingId: state.currentMeetingId
@@ -3699,7 +3716,7 @@ function renderActions() {
   let filtered = state.actions;
   if (actionFilter === 'overdue') filtered = state.actions.filter(a => isOverdue(a));
   else if (actionFilter !== 'all') filtered = state.actions.filter(a => a.status === actionFilter);
-  if (actionAssigneeFilter !== 'all') filtered = filtered.filter(a => a.assigneeId === actionAssigneeFilter);
+  if (actionAssigneeFilter !== 'all') filtered = filtered.filter(a => getAssigneeIds(a).includes(actionAssigneeFilter));
   filtered = [...filtered].sort((a, b) => {
     const aO = isOverdue(a) ? 0 : 1;
     const bO = isOverdue(b) ? 0 : 1;
@@ -3742,7 +3759,7 @@ function renderActions() {
         全員<span class="count">${state.actions.length}</span>
       </button>
       ${getEffectivePersons().filter(p => p.id !== 'other').map(p => {
-        const cnt = state.actions.filter(a => a.assigneeId === p.id).length;
+        const cnt = state.actions.filter(a => getAssigneeIds(a).includes(p.id)).length;
         return `
           <button class="filter-pill ${actionAssigneeFilter === p.id ? 'active' : ''}" onclick="setActionAssigneeFilter('${p.id}')">
             <div class="avatar avatar-xs ${p.avatarClass}" style="width:14px;height:14px;font-size:8px;flex-shrink:0;">${p.initial}</div>
@@ -3794,7 +3811,7 @@ function renderActionRow(a) {
       <div>
         <div class="action-title ${a.status === 'done' ? 'done' : ''}">${escapeHtml(a.title)}</div>
         <div class="action-meta">
-          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escapeHtml(getPerson(a.assigneeId).name)}</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;">${renderAssigneeAvatars(a)}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px;margin-left:2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escapeHtml(getAssigneeNames(a))}</span>
           <span class="meta-sep">·</span>
           <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${formatDateShort(a.deadline)}</span>
           <span class="meta-sep">·</span>
@@ -3897,7 +3914,7 @@ function openEditActionModal(actionId) {
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
-                  <input type="radio" name="edit-act-assignee" value="${p.id}" ${p.id === a.assigneeId ? 'checked' : ''}>
+                  <input type="checkbox" name="edit-act-assignee" value="${p.id}" ${getAssigneeIds(a).includes(p.id) ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
                   <span style="font-size: 13px;">${escapeHtml(p.name)}</span>
                 </label>
@@ -3923,11 +3940,13 @@ async function confirmEditAction(actionId) {
   if (!a) return;
   const title = document.getElementById('edit-act-title').value.trim();
   if (!title) { alert('アクション内容を入力してください'); return; }
-  const assigneeId = document.querySelector('input[name="edit-act-assignee"]:checked').value;
+  const assigneeIds = [...document.querySelectorAll('input[name="edit-act-assignee"]:checked')].map(el => el.value);
+  if (assigneeIds.length === 0) { alert('担当者を1名以上選択してください'); return; }
   const deadline = document.getElementById('edit-act-deadline').value;
   if (!deadline) { alert('期限を入力してください'); return; }
   a.title = title;
-  a.assigneeId = assigneeId;
+  a.assigneeIds = assigneeIds;
+  delete a.assigneeId;
   a.deadline = deadline;
   await saveState();
   closeModal();
@@ -3971,7 +3990,7 @@ function openAddActionFromActionsPage() {
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               ${getEffectivePersons().filter(p => p.id !== 'other').map(p => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); cursor: pointer; flex: 1; min-width: 120px;">
-                  <input type="radio" name="manual-act-assignee" value="${p.id}" ${p.id === cur ? 'checked' : ''}>
+                  <input type="checkbox" name="manual-act-assignee" value="${p.id}" ${p.id === cur ? 'checked' : ''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
                   <span style="font-size: 13px;">${escapeHtml(p.name)}</span>
                 </label>
@@ -3998,15 +4017,15 @@ function openAddActionFromActionsPage() {
 async function confirmAddActionManual() {
   const title = document.getElementById('manual-act-title').value.trim();
   if (!title) { alert('アクション内容を入力してください'); return; }
-  const assigneeEl = document.querySelector('input[name="manual-act-assignee"]:checked');
-  if (!assigneeEl) { alert('担当者を選択してください'); return; }
+  const assigneeIds = [...document.querySelectorAll('input[name="manual-act-assignee"]:checked')].map(el => el.value);
+  if (assigneeIds.length === 0) { alert('担当者を1名以上選択してください'); return; }
   const deadline = document.getElementById('manual-act-deadline').value;
   if (!deadline) { alert('期限を入力してください'); return; }
 
   state.actions.push({
     id: 'act_' + Date.now(),
     title,
-    assigneeId: assigneeEl.value,
+    assigneeIds,
     deadline,
     status: 'todo',
     carryoverCount: 0,
@@ -4579,7 +4598,7 @@ function openLogModal(meetingId) {
                     <option value="done" ${a.status==='done'?'selected':''}>完了</option>
                   </select>
                   <span style="font-weight: 600; font-size: 13px; flex:1;">${escapeHtml(a.title)}</span>
-                  <span style="font-size: 11px; color: var(--ink-500);">${escapeHtml(getPerson(a.assigneeId).name)} ・ ${formatDateShort(a.deadline)}</span>
+                  <span style="font-size: 11px; color: var(--ink-500);">${escapeHtml(getAssigneeNames(a))} ・ ${formatDateShort(a.deadline)}</span>
                 </div>
               `).join('')
             }
@@ -4630,7 +4649,7 @@ function openAddLogAction(meetingId) {
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               ${getEffectivePersons().filter(p=>p.id!=='other').map(p => `
                 <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ink-200);border-radius:var(--radius);cursor:pointer;flex:1;min-width:100px;">
-                  <input type="radio" name="log-act-assignee" value="${p.id}" ${p.id===cur?'checked':''}>
+                  <input type="checkbox" name="log-act-assignee" value="${p.id}" ${p.id===cur?'checked':''}>
                   <div class="avatar avatar-xs ${p.avatarClass}">${p.initial}</div>
                   <span style="font-size:13px;">${escapeHtml(p.name)}</span>
                 </label>
@@ -4656,13 +4675,13 @@ function openAddLogAction(meetingId) {
 async function confirmAddLogAction(meetingId) {
   const title = document.getElementById('log-act-title').value.trim();
   if (!title) { alert('アクション内容を入力してください'); return; }
-  const assigneeEl = document.querySelector('input[name="log-act-assignee"]:checked');
-  if (!assigneeEl) { alert('担当者を選択してください'); return; }
+  const assigneeIds = [...document.querySelectorAll('input[name="log-act-assignee"]:checked')].map(el => el.value);
+  if (assigneeIds.length === 0) { alert('担当者を1名以上選択してください'); return; }
   const deadline = document.getElementById('log-act-deadline').value;
   if (!deadline) { alert('期限を入力してください'); return; }
   state.actions.push({
     id: 'act_' + Date.now(),
-    title, assigneeId: assigneeEl.value, deadline,
+    title, assigneeIds, deadline,
     status: 'todo', carryoverCount: 0,
     source: 'manual', sourceLabel: '過去ログ追加',
     meetingId,
