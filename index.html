@@ -3819,12 +3819,15 @@ function openLogModal(meetingId) {
 
 
 // ============================================================
-// 自動同期（ポーリング）
+// 自動同期（2段階ポーリング）
+// ping（タイムスタンプのみ）で変更を検知 → 変更時のみfullデータ取得
 // ============================================================
-const POLL_INTERVAL_MS = 30000; // 30秒
+const POLL_INTERVAL_MS = 10000; // 10秒ごとにping
 let pollTimer = null;
-let lastSyncedJson = null;   // 前回同期時のJSON（差分検出用）
+let lastSyncedJson = null;
+let lastKnownTimestamp = null; // GAS上の最終更新タイムスタンプ
 let isSyncing = false;
+let pendingRender = false;
 
 function setSyncStatus(status, text) {
   const dot = document.getElementById('sync-dot');
@@ -3841,51 +3844,67 @@ function isUserTyping() {
   return tag === 'textarea' || tag === 'input' || el.isContentEditable;
 }
 
-async function pollSync() {
+function formatSyncTime() {
+  const now = new Date();
+  return now.getHours().toString().padStart(2,'0') + ':' +
+         now.getMinutes().toString().padStart(2,'0') + ':' +
+         now.getSeconds().toString().padStart(2,'0');
+}
+
+// ① 軽量ping: タイムスタンプだけ取得して変更を検知
+async function pingSync() {
+  if (isSyncing) return;
+  try {
+    const res = await fetch(GAS_URL + '?action=ping', { mode: 'cors' });
+    const result = await res.json();
+    if (!result.ok) return;
+    const ts = result.timestamp;
+    if (ts && ts !== lastKnownTimestamp) {
+      // タイムスタンプが変わった → フルデータを取得
+      lastKnownTimestamp = ts;
+      await fetchFullData();
+    } else {
+      // 変化なし → 時刻表示だけ更新
+      setSyncStatus('', '最終確認: ' + formatSyncTime());
+    }
+  } catch (e) {
+    // pingエラーは静かに無視（ネットワーク切断など）
+    setSyncStatus('error', '接続確認中...');
+  }
+}
+
+// ② フルデータ取得（変更検知時のみ呼ばれる）
+async function fetchFullData() {
   if (isSyncing) return;
   isSyncing = true;
-  setSyncStatus('syncing', '同期中...');
+  setSyncStatus('syncing', '更新を取得中...');
   try {
     const res = await fetch(GAS_URL + '?action=get', { mode: 'cors' });
-    const gasResult = await res.json();
-    if (!gasResult.ok || !gasResult.value) { isSyncing = false; return; }
-    const freshJson = gasResult.value;
-
-    // 前回同期と同じなら何もしない
+    const result = await res.json();
+    if (!result.ok || !result.value) { isSyncing = false; return; }
+    const freshJson = result.value;
     if (freshJson === lastSyncedJson) {
-      setSyncStatus('', formatSyncTime());
+      setSyncStatus('', '最終同期: ' + formatSyncTime());
       isSyncing = false;
       return;
     }
-
-    const freshState = JSON.parse(freshJson);
-
-    // 自分が最後に保存したものなら単純に更新
-    // それ以外（他者の書き込み）の場合 → フォーカス中なら表示はスキップ
-    const hasNewData = freshJson !== lastSyncedJson;
     lastSyncedJson = freshJson;
-
-    if (hasNewData) {
-      state = freshState;
-      if (isUserTyping()) {
-        // 入力中: データだけ更新し、UI更新は次回フォーカスが外れた時
-        setSyncStatus('updated', '他の人の入力を取得（入力完了後に反映）');
-        pendingRender = true;
-      } else {
-        renderAll();
-        setSyncStatus('updated', '最終同期: ' + formatSyncTime() + '（更新あり）');
-        // 2秒後に通常表示に戻す
-        setTimeout(() => setSyncStatus('', '最終同期: ' + formatSyncTime()), 2000);
-      }
+    state = JSON.parse(freshJson);
+    if (isUserTyping()) {
+      setSyncStatus('updated', '更新あり（入力完了後に反映）');
+      pendingRender = true;
+    } else {
+      renderAll();
+      setSyncStatus('updated', '最終同期: ' + formatSyncTime() + ' ✓ 更新あり');
+      setTimeout(() => setSyncStatus('', '最終同期: ' + formatSyncTime()), 3000);
     }
   } catch (e) {
-    setSyncStatus('error', '同期エラー');
+    setSyncStatus('error', '取得エラー');
   }
   isSyncing = false;
 }
 
-// 入力完了（フォーカスアウト）時に保留中のrenderを実行
-let pendingRender = false;
+// 入力完了時に保留中のrenderを実行
 document.addEventListener('focusout', () => {
   if (pendingRender && !isUserTyping()) {
     pendingRender = false;
@@ -3894,33 +3913,31 @@ document.addEventListener('focusout', () => {
   }
 });
 
-function formatSyncTime() {
-  const now = new Date();
-  return now.getHours().toString().padStart(2,'0') + ':' +
-         now.getMinutes().toString().padStart(2,'0') + ':' +
-         now.getSeconds().toString().padStart(2,'0');
-}
-
+// 手動更新ボタン
 async function manualSync() {
   const btn = document.getElementById('sync-refresh-btn');
-  if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 500); }
-  await pollSync();
-  if (!pendingRender) setSyncStatus('', '最終同期: ' + formatSyncTime());
+  if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 600); }
+  await fetchFullData();
 }
 
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(pollSync, POLL_INTERVAL_MS);
-  // 初回表示
+  pollTimer = setInterval(pingSync, POLL_INTERVAL_MS);
   setSyncStatus('', '最終同期: ' + formatSyncTime());
-  lastSyncedJson = JSON.stringify(state); // 初期状態を記憶
+  lastSyncedJson = JSON.stringify(state);
 }
 
-// saveState をラップして lastSyncedJson を更新
+// saveState をラップ: 自分の保存はdiffから除外 + タイムスタンプを記録
 const _origSaveState = saveState;
 saveState = async function() {
   await _origSaveState();
-  lastSyncedJson = JSON.stringify(state); // 自分の保存はdiffから除外
+  lastSyncedJson = JSON.stringify(state);
+  // 保存後にpingしてタイムスタンプを同期
+  try {
+    const res = await fetch(GAS_URL + '?action=ping', { mode: 'cors' });
+    const result = await res.json();
+    if (result.ok && result.timestamp) lastKnownTimestamp = result.timestamp;
+  } catch(e) {}
   setSyncStatus('', '最終同期: ' + formatSyncTime());
 };
 
