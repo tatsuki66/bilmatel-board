@@ -716,11 +716,16 @@
   }
   .avatar-sm { width: 28px; height: 28px; font-size: 12px; }
   .avatar-xs { width: 22px; height: 22px; font-size: 10px; }
-  .avatar-1 { background: #E8E0F5; color: #4A3580; border-color: #C9B8E8; } /* 鳩 */
-  .avatar-2 { background: #DCEDE3; color: #1F5A3A; border-color: #B5D6C0; } /* 山 */
-  .avatar-3 { background: #F5E6D3; color: #7A4A1A; border-color: #DDC499; } /* 平 */
-  .avatar-4 { background: #D8EAF5; color: #1A4A6B; border-color: #A8CCE0; } /* 小 */
-  .avatar-5 { background: #EEEAE5; color: #5A5048; border-color: #CEC8BE; } /* 他 */
+  .avatar-1  { background: #E8E0F5; color: #4A3580; border-color: #C9B8E8; } /* 紫 */
+  .avatar-2  { background: #DCEDE3; color: #1F5A3A; border-color: #B5D6C0; } /* 緑 */
+  .avatar-3  { background: #F5E6D3; color: #7A4A1A; border-color: #DDC499; } /* オレンジ */
+  .avatar-4  { background: #D8EAF5; color: #1A4A6B; border-color: #A8CCE0; } /* 青 */
+  .avatar-5  { background: #EEEAE5; color: #5A5048; border-color: #CEC8BE; } /* グレー */
+  .avatar-6  { background: #FDEAEA; color: #8B1A1A; border-color: #F0B8B8; } /* 赤 */
+  .avatar-7  { background: #FFF7D6; color: #7A5C00; border-color: #E8D48A; } /* 黄 */
+  .avatar-8  { background: #E0F2F0; color: #1A5A54; border-color: #A8D9D4; } /* ティール */
+  .avatar-9  { background: #FCE8F3; color: #8B1A5A; border-color: #F0B8D8; } /* ピンク */
+  .avatar-10 { background: #E8EDF5; color: #1A2A5A; border-color: #B8C4E0; } /* ネイビー */
   .member-info { flex: 1; min-width: 0; }
   .member-name {
     font-size: 14px; font-weight: 600; color: var(--ink-900);
@@ -1989,6 +1994,102 @@
     line-height: 1.7;
   }
 
+  /* ============================================
+     定量サマリーパート（シグナルから読み取れること）
+     ============================================ */
+  .quant-insight-card {
+    background: var(--paper-2);
+    border: 1.5px solid var(--accent-fog);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .quant-insight-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .quant-insight-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink-900);
+  }
+  .quant-insight-title svg { color: var(--accent-fog); }
+  .quant-insight-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--accent-fog-soft);
+    color: var(--accent-fog);
+  }
+  .quant-insight-list {
+    background: var(--paper-3);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .quant-insight-theme {
+    margin-bottom: 12px;
+  }
+  .quant-insight-theme:last-child { margin-bottom: 0; }
+  .quant-insight-theme-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-500);
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .quant-insight-signals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .quant-insight-signals li {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--ink-800);
+    line-height: 1.6;
+  }
+  .quant-insight-comment {
+    color: var(--ink-400);
+    font-size: 12px;
+  }
+  .quant-insight-prompt {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #EDE6FA;
+    border-left: 3px solid #6B4DA8;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--ink-700);
+    line-height: 1.75;
+    margin-bottom: 14px;
+  }
+  .quant-insight-prompt svg { color: #6B4DA8; flex-shrink: 0; margin-top: 2px; }
+  .quant-insight-input-area {}
+  .quant-insight-input-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-500);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
 </style>
 
 <div class="app">
@@ -2481,7 +2582,7 @@ function countLitSignals(m) {
   if (!m || !m.signals) return 0;
   const active = getActiveSignalIds();
   return Object.entries(m.signals).filter(([k,s]) =>
-    active.has(k) && (s.state === 'yes' || s.state === 'unknown') && s.discussInMeeting !== false
+    active.has(k) && s.state === 'yes'
   ).length;
 }
 function countNoSignals(m) {
@@ -2851,18 +2952,71 @@ function renderQuant() {
       </div>
     </div>
 
+    <!-- シグナルから読み取れること（サマリーパート） -->
+    ${(() => {
+      const litList = [];
+      for (const theme of getEffectiveSignalThemes()) {
+        const themeSignals = theme.signals.filter(s => !s._deleted && (m.signals[s.id] || {}).state === 'yes');
+        if (themeSignals.length > 0) litList.push({ theme, signals: themeSignals });
+      }
+      const saved = m.quantSummary || '';
+      return `
+        <div class="quant-insight-card">
+          <div class="quant-insight-header">
+            <div class="quant-insight-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              シグナルから読み取れること
+            </div>
+            <span class="quant-insight-badge">${litList.reduce((s,t)=>s+t.signals.length,0)}件 点灯</span>
+          </div>
+
+          ${litList.length === 0 ? `
+            <div style="color:var(--ink-400);font-size:13px;padding:8px 0;">点灯シグナルなし — 今回は全て「なし」です</div>
+          ` : `
+            <div class="quant-insight-list">
+              ${litList.map(({theme, signals}) => `
+                <div class="quant-insight-theme">
+                  <div class="quant-insight-theme-label">${theme.num} ${escapeHtml(theme.name)}</div>
+                  <ul class="quant-insight-signals">
+                    ${signals.map(sig => `
+                      <li>
+                        <span class="signal-indicator yes" style="width:7px;height:7px;flex-shrink:0;margin-top:5px;"></span>
+                        <span>${escapeHtml(sig.text)}</span>
+                        ${(m.signals[sig.id] || {}).comment ? `<span class="quant-insight-comment">— ${escapeHtml((m.signals[sig.id]||{}).comment)}</span>` : ''}
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              `).join('')}
+            </div>
+          `}
+
+          <div class="quant-insight-prompt">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>上記を踏まえて考えてみてください：<strong>商談数・商談内容・商談先・見積スピード・見積内容・見積後フォロー</strong>のどこを改善すべきか。また、担当者ごとに改善点があるのか、それとも全社的な改善点なのか。</span>
+          </div>
+
+          <div class="quant-insight-input-area">
+            <div class="quant-insight-input-label">解釈・コメント（編集可）</div>
+            <textarea class="textarea" id="quant-summary-textarea" placeholder="点灯シグナルから読み取れること、課題のポイント、改善すべきプロセスを記入..."
+              onchange="updateQuantSummary(this.value)">${escapeHtml(saved)}</textarea>
+          </div>
+        </div>
+      `;
+    })()}
+
     <!-- Summary -->
     <div class="quant-summary">
       <div>
-        <div class="summary-block-label">点灯（議論候補）</div>
+        <div class="summary-block-label">点灯（あり）</div>
         <div class="summary-block-value ${litCount > 0 ? 'danger' : ''}">${litCount}</div>
       </div>
       <div>
-        <div class="summary-block-label">確認済み（なし）</div>
+        <div class="summary-block-label">なし</div>
         <div class="summary-block-value success">${noCount}</div>
       </div>
       <div>
-        <div class="summary-block-label">未確認</div>
+        <div class="summary-block-label">未回答</div>
         <div class="summary-block-value" style="color: var(--ink-300);">${unsetCount}</div>
       </div>
       <div class="source-block">
@@ -2932,34 +3086,22 @@ function renderThemeCard(theme, m) {
 function renderSignal(sig, m) {
   const data = m.signals[sig.id] || {};
   const st = data.state;
-  const showDiscussToggle = (st === 'yes' || st === 'unknown');
-  // discussInMeeting: デフォルトtrue（未設定はtrue扱い）
-  const discuss = data.discussInMeeting !== false;
-  const indicatorClass = st === 'yes' ? 'yes' : st === 'no' ? 'no' : st === 'unknown' ? 'unknown' : '';
+  const indicatorClass = st === 'yes' ? 'yes' : st === 'no' ? 'no' : '';
   const textClass = st === 'yes' ? 'yes' : st === 'no' ? 'no' : '';
   return `
     <div class="signal-row">
       <span class="signal-indicator ${indicatorClass}"></span>
       <div class="signal-content">
         <div class="signal-text ${textClass}">${escapeHtml(sig.text)}</div>
-        ${showDiscussToggle ? `
-          <div class="signal-comment" style="${st === 'unknown' ? 'background: var(--accent-gold-soft); border-left-color: var(--accent-gold);' : ''}">
-            <textarea placeholder="補足コメント（任意） — 数字の背景や気になる点があれば"
+        ${st === 'yes' ? `
+          <div class="signal-comment">
+            <textarea placeholder="補足コメント（任意） — 数字の背景や具体的な案件名、気になる点があれば"
               onchange="updateSignalComment('${sig.id}', this.value)">${escapeHtml(data.comment || '')}</textarea>
-          </div>
-          <div class="discuss-toggle-row">
-            <label>
-              <input type="checkbox" ${discuss ? 'checked' : ''}
-                onchange="setSignalDiscuss('${sig.id}', this.checked)">
-              <span class="toggle-label">会議で議論する</span>
-              <span class="toggle-hint">${discuss ? '→ 会議画面に表示されます' : '→ 既知の問題として除外'}</span>
-            </label>
           </div>
         ` : ''}
       </div>
       <div class="signal-controls">
         <button class="sig-btn ${st === 'yes' ? 'active-yes' : ''}" onclick="setSignal('${sig.id}', 'yes')">あり</button>
-        <button class="sig-btn ${st === 'unknown' ? 'active-unknown' : ''}" onclick="setSignal('${sig.id}', 'unknown')">未確認</button>
         <button class="sig-btn ${st === 'no' ? 'active-no' : ''}" onclick="setSignal('${sig.id}', 'no')">なし</button>
       </div>
     </div>
@@ -2997,6 +3139,12 @@ async function setSignalDiscuss(signalId, value) {
   m.signals[signalId].discussInMeeting = value;
   await saveState();
   renderPage();
+}
+
+async function updateQuantSummary(value) {
+  const m = getCurrentMeeting();
+  m.quantSummary = value;
+  await saveState();
 }
 
 async function updateFreeNumber(value) {
@@ -3280,19 +3428,20 @@ async function moveTopic(topicId, dir) {
 // ============================================================
 function renderMeeting() {
   const m = getCurrentMeeting();
-  const litSignals = [];
+  // 点灯シグナルをテーマ別に集約
+  const litByTheme = [];
   const effectiveThemesMtg = (state && state.customSignals) ? getEffectiveSignalThemes() : SIGNAL_THEMES;
   for (const theme of effectiveThemesMtg) {
+    const themeSignals = [];
     for (const sig of theme.signals) {
       if (sig._deleted) continue;
       const data = m.signals[sig.id];
-      if (!data) continue;
-      const st = data.state;
-      if ((st === 'yes' || st === 'unknown') && data.discussInMeeting !== false) {
-        litSignals.push({ signal: sig, theme: theme, comment: data.comment, state: st });
-      }
+      if (!data || data.state !== 'yes') continue;
+      themeSignals.push({ sig, comment: data.comment });
     }
+    if (themeSignals.length > 0) litByTheme.push({ theme, signals: themeSignals });
   }
+  const totalLit = litByTheme.reduce((s, t) => s + t.signals.length, 0);
   const pillarTopics = PILLARS.filter(p => {
     const v = m.pillarUpdates[p.id];
     if (!v) return false;
@@ -3322,17 +3471,71 @@ function renderMeeting() {
       <div>
         <div class="session-banner-num">PART 1</div>
         <div class="session-banner-title">前半セッション ／ 定量レビュー</div>
-        <div class="session-banner-desc">点灯シグナルを順に議論</div>
+        <div class="session-banner-desc">点灯シグナルのサマリーをもとに議論</div>
       </div>
-      <div class="session-banner-count">${litSignals.length}件</div>
+      <div class="session-banner-count">${totalLit}件 点灯</div>
     </div>
 
-    ${litSignals.length === 0 ? `
-      <div class="card empty">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        点灯シグナルなし — 定量セッションはスキップできます
+    <div class="agenda-item" id="agenda-quant-summary">
+      <div class="agenda-head">
+        <span class="pill pill-info">定量サマリー</span>
+        <span class="agenda-title">シグナルから読み取れること</span>
+        <button class="agenda-done-btn ${(m.signalDiscussions['__quant_summary__'] || {}).done ? 'done' : ''}"
+          onclick="toggleAgendaDone('signal', '__quant_summary__')">
+          ${(m.signalDiscussions['__quant_summary__'] || {}).done
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>議論完了'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>完了にする'}
+        </button>
       </div>
-    ` : litSignals.map(item => renderSignalAgenda(item, m)).join('')}
+      <div class="agenda-body">
+        ${totalLit === 0 ? `
+          <div style="color:var(--ink-400);font-size:13px;padding:4px 0;">点灯シグナルなし — 定量セッションはスキップできます</div>
+        ` : `
+          <div class="agenda-context">
+            <div class="agenda-context-label">点灯シグナル一覧（${totalLit}件）</div>
+            ${litByTheme.map(({theme, signals}) => `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--ink-500);margin-bottom:4px;">${theme.num} ${escapeHtml(theme.name)}</div>
+                ${signals.map(({sig, comment}) => `
+                  <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;font-size:13px;">
+                    <span class="signal-indicator yes" style="width:7px;height:7px;flex-shrink:0;margin-top:5px;"></span>
+                    <div>
+                      <span style="color:var(--ink-800);">${escapeHtml(sig.text)}</span>
+                      ${comment ? `<span style="color:var(--ink-400);font-size:12px;"> — ${escapeHtml(comment)}</span>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+          ${m.quantSummary ? `
+            <div class="agenda-context" style="margin-top:8px;">
+              <div class="agenda-context-label">解釈・コメント</div>
+              <div style="font-size:13px;color:var(--ink-700);line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.quantSummary)}</div>
+            </div>
+          ` : `
+            <div style="font-size:12px;color:var(--ink-400);font-style:italic;margin-top:4px;">定量モニタリングページで「解釈・コメント」を入力すると、ここに表示されます</div>
+          `}
+        `}
+        <div class="agenda-field" style="margin-top:12px;">
+          <div class="field-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>逐語記録</div>
+          <textarea class="textarea textarea-lg" placeholder="議論の発言を逐語に近く記録"
+            onchange="updateSignalDiscussion('__quant_summary__', 'transcript', this.value)">${escapeHtml((m.signalDiscussions['__quant_summary__'] || {}).transcript || '')}</textarea>
+        </div>
+        <div class="agenda-field">
+          <div class="field-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>結論</div>
+          <textarea class="textarea" placeholder="定量レビューの結論・判断をまとめる"
+            onchange="updateSignalDiscussion('__quant_summary__', 'conclusion', this.value)">${escapeHtml((m.signalDiscussions['__quant_summary__'] || {}).conclusion || '')}</textarea>
+        </div>
+        <div class="agenda-field">
+          <div class="field-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>ネクストアクション</div>
+          ${((m.signalDiscussions['__quant_summary__'] || {}).actions || []).map(actId => renderInlineAction(actId)).join('')}
+          <button class="btn btn-secondary btn-sm" onclick="openAddActionModal('signal', '__quant_summary__', '定量レビュー')" style="margin-top:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>アクションを追加
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 後半 -->
     <div class="session-banner">
@@ -3545,7 +3748,20 @@ async function toggleAgendaDone(type, id) {
 function openMeetingSummaryModal() {
   const m = getCurrentMeeting();
   const effectiveThemesMtg = (state && state.customSignals) ? getEffectiveSignalThemes() : SIGNAL_THEMES;
-  const litSignals = [];
+  // 点灯シグナル集計
+  const litByTheme = [];
+  for (const theme of effectiveThemesMtg) {
+    const themeSignals = [];
+    for (const sig of theme.signals) {
+      if (sig._deleted) continue;
+      const data = m.signals[sig.id];
+      if (!data || data.state !== 'yes') continue;
+      themeSignals.push(sig);
+    }
+    if (themeSignals.length > 0) litByTheme.push({ theme, signals: themeSignals });
+  }
+  const totalLit = litByTheme.reduce((s, t) => s + t.signals.length, 0);
+  const litSignals = []; // 後方互換用（未使用）
   for (const theme of effectiveThemesMtg) {
     for (const sig of theme.signals) {
       if (sig._deleted) continue;
@@ -3560,14 +3776,16 @@ function openMeetingSummaryModal() {
   const topics = m.topics || [];
   const actions = state.actions.filter(a => a.meetingId === state.currentMeetingId);
 
-  const signalRows = litSignals.map(({ sig, theme, disc }) => `
+  const quantDiscModal = (m.signalDiscussions || {})['__quant_summary__'] || {};
+  const signalRows = totalLit > 0 ? `
     <div class="log-item">
-      <div class="log-item-title" style="color:var(--accent-ink);">[${theme.num}] ${escapeHtml(sig.text)}</div>
-      ${disc.conclusion
-        ? `<div class="log-item-comment"><strong>結論：</strong>${escapeHtml(disc.conclusion)}</div>`
+      <div class="log-item-title" style="color:var(--accent-ink);">定量レビュー（${totalLit}件 点灯）</div>
+      ${m.quantSummary ? `<div class="log-item-comment"><strong>読み取り：</strong>${escapeHtml(m.quantSummary)}</div>` : ''}
+      ${quantDiscModal.conclusion
+        ? `<div class="log-item-comment"><strong>結論：</strong>${escapeHtml(quantDiscModal.conclusion)}</div>`
         : `<div class="log-item-comment" style="color:var(--ink-300);font-style:italic;">結論未記入</div>`}
     </div>
-  `).join('');
+  ` : '';
 
   const topicRows = topics.map(t => `
     <div class="log-item">
@@ -3602,9 +3820,9 @@ function openMeetingSummaryModal() {
           <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="modal-body">
-          ${litSignals.length > 0 ? `
+          ${totalLit > 0 ? `
             <div class="log-section">
-              <div class="log-section-title">定量レビュー（${litSignals.length}件）</div>
+              <div class="log-section-title">定量レビュー（${totalLit}件 点灯）</div>
               ${signalRows}
             </div>
           ` : ''}
@@ -4619,7 +4837,7 @@ function openAddMemberModal() {
           <div class="modal-field">
             <div class="field-label">アバターカラー</div>
             <div style="display:flex;gap:8px;">
-              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5'].map((cls,i) => `
+              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5','avatar-6','avatar-7','avatar-8','avatar-9','avatar-10'].map((cls,i) => `
                 <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
                   <input type="radio" name="new-member-avatar" value="${cls}" ${i===0?'checked':''}>
                   <div class="avatar ${cls}" style="width:28px;height:28px;font-size:11px;">A</div>
@@ -4670,7 +4888,7 @@ function openEditMemberModal(memberId) {
           <div class="modal-field">
             <div class="field-label">アバターカラー</div>
             <div style="display:flex;gap:8px;">
-              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5'].map(cls => `
+              ${['avatar-1','avatar-2','avatar-3','avatar-4','avatar-5','avatar-6','avatar-7','avatar-8','avatar-9','avatar-10'].map(cls => `
                 <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
                   <input type="radio" name="edit-member-avatar" value="${cls}" ${p.avatarClass===cls?'checked':''}>
                   <div class="avatar ${cls}" style="width:28px;height:28px;font-size:11px;">A</div>
