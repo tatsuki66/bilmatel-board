@@ -2289,7 +2289,7 @@ const SIGNAL_THEMES = [
 
 const STORAGE_KEY = 'builmatel_board_state_v2';
 const SHARED = true;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyydUsNEdQJJ6eHQi_0xUFJ9yJb_RTRsuOHn2-UlbKw_wDjDrM04KrDPvodHFFvjaWWQQ/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPd34_67JneQ-Dc7l8YzB_5GUqjyggImAtMJMj5zjahtz4_RfOp0wikbTUL63qC3DF/exec';
 
 // ============================================================
 // 日付ヘルパー
@@ -2470,36 +2470,35 @@ function createSampleData() {
 // ステート
 // ============================================================
 let state = null;
-let currentPage = localStorage.getItem('builmatel_page') || 'home';
+let currentPage = 'home';
 let actionFilter = 'all';
 let selectedActions = new Set();
 let expandedThemes = new Set();
 
 async function loadState() {
-  // タイムアウト付きfetch（8秒で諦める）
-  const fetchWithTimeout = (url, opts, ms) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ms);
-    return fetch(url, { ...opts, signal: controller.signal })
-      .finally(() => clearTimeout(timer));
-  };
-
   try {
-    const res = await fetchWithTimeout(GAS_URL + '?action=get', { mode: 'cors' }, 8000);
+    // ★ 修正: タイムアウト処理を追加（GASが応答しない場合の永久ハング防止）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20秒でタイムアウト
+    let res;
+    try {
+      res = await fetch(GAS_URL + '?action=get', { mode: 'cors', signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     const json = await res.json();
     if (json.ok && json.value) {
       state = JSON.parse(json.value);
       return;
     }
   } catch (e) {
-    const reason = e.name === 'AbortError' ? 'タイムアウト' : e.message;
-    console.warn('GAS load失敗（' + reason + '）、ローカルフォールバックへ');
-    // フォールバック: window.storage
-    try {
-      const result = await window.storage.get(STORAGE_KEY, SHARED);
-      if (result && result.value) { state = JSON.parse(result.value); return; }
-    } catch (e2) {}
+    if (e.name === 'AbortError') {
+      console.warn('GAS load タイムアウト、サンプルデータを使用します');
+    } else {
+      console.warn('GAS load失敗、サンプルデータを使用します:', e);
+    }
   }
+  // フォールバック: サンプルデータ（window.storageはClaudeアーティファクト外では使えないため省略）
   state = createSampleData();
   await saveState();
 }
@@ -2529,7 +2528,7 @@ async function resetData() {
 // ============================================================
 // ユーティリティ
 // ============================================================
-function getCurrentMeeting() { return state.currentMeetingId ? state.meetings[state.currentMeetingId] : null; }
+function getCurrentMeeting() { return state.meetings[state.currentMeetingId]; }
 function getPerson(id) { return PERSONS.find(p => p.id === id) || { name: '—', initial: '?', avatarClass: 'avatar-1' }; }
 function getPillar(id) { return PILLARS.find(p => p.id === id) || null; }
 
@@ -2750,15 +2749,14 @@ function renderTopbar() {
 }
 function switchPage(id) {
   currentPage = id;
-  localStorage.setItem('builmatel_page', id);
+  // URLハッシュを更新（リロード時に復元できるよう）
+  history.pushState(null, '', '#' + id);
   if (id === 'quant') {
     expandedThemes.clear();
     const m = getCurrentMeeting();
-    if (m) {
-      for (const theme of SIGNAL_THEMES) {
-        const lit = theme.signals.filter(s => (m.signals[s.id] || {}).state === 'yes').length;
-        if (lit > 0) expandedThemes.add(theme.id);
-      }
+    for (const theme of SIGNAL_THEMES) {
+      const lit = theme.signals.filter(s => (m.signals[s.id] || {}).state === 'yes').length;
+      if (lit > 0) expandedThemes.add(theme.id);
     }
   }
   renderAll();
@@ -2769,7 +2767,6 @@ function switchPage(id) {
 // メインレンダー
 // ============================================================
 function renderAll() {
-  localStorage.setItem('builmatel_page', currentPage);
   document.getElementById('today-date').textContent = formatDate(new Date().toISOString().slice(0,10));
   renderSidebarNav();
   renderSidebarUserSwitcher();
@@ -2797,15 +2794,6 @@ function renderPage() {
 // ============================================================
 function renderHome() {
   const m = getCurrentMeeting();
-  if (!m) {
-    return `
-      <div class="card" style="padding:40px;text-align:center;color:var(--ink-400);">
-        <div style="font-size:15px;font-weight:600;margin-bottom:12px;">現在の定例がありません</div>
-        <div style="font-size:13px;margin-bottom:20px;">定例を完了したら、次回定例を作成してください</div>
-        <button class="btn btn-primary" onclick="openCreateMeetingModal()">次回定例を作成</button>
-      </div>
-    `;
-  }
   const days = daysUntil(m.date);
   const litCount = countLitSignals(m);
   const noCount = countNoSignals(m);
@@ -3323,19 +3311,16 @@ function renderQual() {
               </div>
             </div>`;
           }).join('')}
-          <!-- 自分のコメントがなければ追記欄を表示 -->
+          <!-- 自分のコメントがなければ追記欄を表示（自動保存） -->
           ${!myTopicComment ? `
           <div class="thread-add-row">
             <div class="avatar avatar-sm ${getPerson(cur).avatarClass}" style="flex-shrink:0;margin-top:2px;">${getPerson(cur).initial}</div>
             <div class="thread-add-input-wrap">
               <textarea id="new-comment-${topic.id}" placeholder="背景・スタンスをコメント（${escapeHtml(getPerson(cur).name)}）"
-                rows="2"></textarea>
-              <div class="thread-add-actions">
-                <button class="btn btn-secondary btn-sm" onclick="addTopicComment('${topic.id}')">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  コメントを追加
-                </button>
-              </div>
+                rows="2"
+                onblur="autoSaveTopicComment('${topic.id}', this.value)"
+                oninput="markTopicCommentDirty('${topic.id}')"></textarea>
+              <div style="padding:2px 8px 6px;font-size:10px;color:var(--ink-300);text-align:right;" id="comment-hint-${topic.id}">フォーカスを外すと自動保存</div>
             </div>
           </div>
           ` : ''}
@@ -3421,6 +3406,32 @@ async function addTopicComment(topicId) {
   await saveState();
   renderPage();
 }
+// 論点コメント自動保存（onblur時）
+const _dirtyTopicComments = new Set();
+function markTopicCommentDirty(topicId) {
+  _dirtyTopicComments.add(topicId);
+  const hint = document.getElementById('comment-hint-' + topicId);
+  if (hint) hint.textContent = '未保存';
+}
+async function autoSaveTopicComment(topicId, value) {
+  if (!_dirtyTopicComments.has(topicId)) return;
+  _dirtyTopicComments.delete(topicId);
+  if (!value.trim()) return; // 空なら保存しない
+  const m = getCurrentMeeting();
+  const t = (m.topics || []).find(x => x.id === topicId);
+  if (!t) return;
+  t.comments = t.comments || [];
+  // 自分のコメントがすでにある場合は更新、なければ追加
+  const existing = t.comments.find(c => c.authorId === state.currentUserId);
+  if (existing) {
+    existing.text = value;
+  } else {
+    t.comments.push({ id: 'c_' + Date.now(), authorId: state.currentUserId, text: value });
+  }
+  await saveState();
+  renderPage(); // 保存後にコメントスレッドとして表示
+}
+
 async function updateTopicComment(topicId, commentId, value) {
   const m = getCurrentMeeting();
   const t = (m.topics || []).find(x => x.id === topicId);
@@ -4072,18 +4083,24 @@ function openCompleteMeetingModal() {
 async function confirmCompleteMeeting() {
   const m = getCurrentMeeting();
   m.status = 'completed';
-  m.completedAt = new Date().toISOString();
   // 未完了アクションの持ち越し回数を+1
   state.actions.forEach(a => {
     if (a.meetingId === state.currentMeetingId && a.status !== 'done') {
       a.carryoverCount = (a.carryoverCount || 0) + 1;
     }
   });
-  // currentMeetingId を null にして過去ログへ移動させる
-  state.currentMeetingId = null;
+  // ★ 修正: 新しい定例を自動作成してcurrentMeetingIdを切り替える
+  const newId = 'mtg_' + Date.now();
+  state.meetings[newId] = {
+    id: newId,
+    date: getNextMeetingDate(),
+    title: '次回定例',
+    status: 'preparing',
+    signals: {}, freeNumberComment: '', pillarUpdates: {}, topics: [], signalDiscussions: {}
+  };
+  state.currentMeetingId = newId;
   await saveState();
   closeModal();
-  switchPage('log');
   renderAll();
 }
 
@@ -4597,7 +4614,7 @@ function renderHowTo() {
               <rect x="252" y="77" width="36" height="18" rx="9" fill="#E5EFD5" stroke="#C5D9A4" stroke-width="1"/>
               <text x="270" y="90" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="700" fill="#2F4A1A">なし</text>
               <line x1="0" y1="103" x2="300" y2="103" stroke="#ECEAE2" stroke-width="1"/>
-              <text x="14" y="120" font-family="sans-serif" font-size="8" fill="#A8AFBE">※「あり」を選ぶと会議の議題候補になります</text>
+              <text x="8" y="120" font-family="sans-serif" font-size="7.5" fill="#A8AFBE">※「あり」を選ぶと会議の議題候補になります</text>
             </svg>
             <div class="howto-figure-caption">「あり」にしたシグナルが当日の議題候補になります</div>
           </div>
@@ -4630,7 +4647,7 @@ function renderHowTo() {
               <text x="20" y="84" font-family="sans-serif" font-size="9" font-weight="600" fill="#1A1F2E">今週議論したい論点</text>
               <rect x="16" y="92" width="100" height="20" rx="5" fill="#F7F5F0" stroke="#D6DAE3" stroke-width="1"/>
               <text x="66" y="106" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#56627A">＋ 論点を追加</text>
-              <text x="126" y="106" font-family="sans-serif" font-size="8" fill="#A8AFBE">← ここから追加</text>
+              <text x="124" y="106" font-family="sans-serif" font-size="7.5" fill="#A8AFBE">← ここから追加</text>
             </svg>
             <div class="howto-figure-caption">担当する柱に進捗を書き、論点も追加できます</div>
           </div>
@@ -4721,24 +4738,24 @@ function renderHowTo() {
           <text x="320" y="29" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#56627A">完了</text>
           <!-- アクション行1: 超過 -->
           <rect x="16" y="46" width="648" height="32" rx="5" fill="white" stroke="#E0DDD3" stroke-width="1"/>
-          <rect x="28" y="54" width="56" height="16" rx="8" fill="#FBE6DD"/>
-          <text x="56" y="66" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#A84B2A">2回持越し</text>
-          <text x="94" y="66" font-family="sans-serif" font-size="9" font-weight="600" fill="#1A1F2E">CAD見積フェーズ2 発注判断</text>
-          <text x="94" y="72" font-family="sans-serif" font-size="8" fill="#7B8499">平本さん・期限 4/30</text>
-          <rect x="530" y="52" width="80" height="20" rx="4" fill="#F7F5F0" stroke="#D6DAE3" stroke-width="1"/>
-          <text x="570" y="66" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#56627A">未着手 ▾</text>
+          <rect x="28" y="54" width="60" height="16" rx="8" fill="#FBE6DD"/>
+          <text x="58" y="66" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#A84B2A">2回持越し</text>
+          <text x="98" y="64" font-family="sans-serif" font-size="9" font-weight="600" fill="#1A1F2E">CAD見積フェーズ2 発注判断</text>
+          <text x="98" y="74" font-family="sans-serif" font-size="8" fill="#7B8499">平本さん・期限 4/30</text>
+          <rect x="524" y="52" width="80" height="20" rx="4" fill="#F7F5F0" stroke="#D6DAE3" stroke-width="1"/>
+          <text x="564" y="66" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#56627A">未着手 ▾</text>
           <!-- アクション行2: 近い -->
           <rect x="16" y="84" width="648" height="32" rx="5" fill="rgba(245,235,208,0.5)" stroke="#D9C896" stroke-width="1"/>
           <rect x="28" y="92" width="40" height="16" rx="8" fill="#F5EBD0"/>
           <text x="48" y="104" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7a5c10">2日後</text>
-          <text x="78" y="98" font-family="sans-serif" font-size="9" font-weight="600" fill="#1A1F2E">外構担当割振りの確定</text>
-          <text x="78" y="110" font-family="sans-serif" font-size="8" fill="#7B8499">山崎さん・期限 5/7</text>
+          <text x="78" y="96" font-family="sans-serif" font-size="9" font-weight="600" fill="#1A1F2E">外構担当割振りの確定</text>
+          <text x="78" y="108" font-family="sans-serif" font-size="8" fill="#7B8499">山崎さん・期限 5/7</text>
           <!-- アクション行3: 完了 -->
           <rect x="16" y="122" width="648" height="32" rx="5" fill="white" stroke="#E0DDD3" stroke-width="1"/>
           <rect x="28" y="130" width="32" height="16" rx="8" fill="#E5EFD5"/>
           <text x="44" y="142" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2F4A1A">完了</text>
-          <text x="70" y="138" font-family="sans-serif" font-size="9" fill="#A8AFBE" text-decoration="line-through">HubSpotダッシュボードv2</text>
-          <text x="70" y="148" font-family="sans-serif" font-size="8" fill="#A8AFBE">山崎さん・期限 5/1</text>
+          <text x="70" y="136" font-family="sans-serif" font-size="8" fill="#A8AFBE" text-decoration="line-through">HubSpotダッシュボードv2</text>
+          <text x="70" y="147" font-family="sans-serif" font-size="8" fill="#A8AFBE">山崎さん・期限 5/1</text>
         </svg>
         <div class="howto-figure-caption">期限超過（赤）・期限が近いもの（黄）が上部に優先表示されます。ステータスは行右のセレクトで更新できます</div>
       </div>
@@ -5246,11 +5263,41 @@ function renderLog() {
   `;
 }
 
+function renderLogAccordion(id, title, count, bodyHtml, defaultOpen) {
+  const isOpen = defaultOpen || false;
+  return `
+    <div class="log-section" style="border:1px solid var(--rule-soft);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px;">
+      <div onclick="toggleLogSection('${id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--paper-2);cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="log-section-title" style="margin:0;border:none;padding:0;">${title}</span>
+          <span style="font-size:11px;color:var(--ink-400);font-family:var(--font-mono);">${count}</span>
+        </div>
+        <span id="log-chevron-${id}" style="color:var(--ink-300);transition:transform 0.2s;display:inline-flex;${isOpen ? 'transform:rotate(180deg)' : ''}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </div>
+      <div id="log-body-${id}" style="display:${isOpen ? 'block' : 'none'};padding:12px 16px;">
+        ${bodyHtml}
+      </div>
+    </div>
+  `;
+}
+function toggleLogSection(id) {
+  const body = document.getElementById('log-body-' + id);
+  const chevron = document.getElementById('log-chevron-' + id);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
 function openLogModal(meetingId) {
   const m = state.meetings[meetingId];
   if (!m) return;
-  const lit = [];
   const effectiveThemesLog = (state && state.customSignals) ? getEffectiveSignalThemes() : SIGNAL_THEMES;
+
+  // 点灯シグナル集計
+  const lit = [];
   for (const theme of effectiveThemesLog) {
     for (const sig of theme.signals) {
       if (sig._deleted) continue;
@@ -5259,93 +5306,157 @@ function openLogModal(meetingId) {
     }
   }
   const actions = state.actions.filter(a => a.meetingId === meetingId);
-  const pillarKeys = Object.keys(m.pillarUpdates || {});
+  // 5本柱を番号順（p1→p5）にソート
+  const pillarKeys = Object.keys(m.pillarUpdates || {}).sort((a, b) => {
+    const order = ['p1','p2','p3','p4','p5'];
+    return order.indexOf(a) - order.indexOf(b);
+  });
   const topics = m.topics || [];
+  const signalDiscs = m.signalDiscussions || {};
+
+  // --- 定量レビューセクション ---
+  const quantDisc = signalDiscs['__quant_summary__'] || {};
+  // 点灯シグナルのうち会議で個別議論があったものを抽出
+  const litWithDisc = lit.filter(l => {
+    const d = signalDiscs[l.signal.id];
+    return d && (d.transcript || d.conclusion);
+  });
+  const quantBody = `
+    ${m.quantSummary ? `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">解釈・コメント</div>
+        <div style="font-size:13px;color:var(--ink-700);line-height:1.7;white-space:pre-wrap;padding:8px 12px;background:var(--paper-2);border-radius:var(--radius);border-left:2px solid var(--accent-gold);">${escapeHtml(m.quantSummary)}</div>
+      </div>
+    ` : ''}
+    ${lit.length > 0 ? `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">点灯シグナル（${lit.length}件）</div>
+        ${lit.map(l => `
+          <div class="log-item">
+            <div class="log-item-title" style="font-size:12px;">[${l.theme.num}] ${escapeHtml(l.signal.text)}</div>
+            ${l.data.comment ? `<div class="log-item-comment">${escapeHtml(l.data.comment)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '<div style="font-size:13px;color:var(--ink-400);margin-bottom:8px;">点灯シグナルなし</div>'}
+    ${quantDisc.transcript ? `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">逐語記録（定量レビュー全体）</div>
+        <div style="font-size:12px;color:var(--ink-700);line-height:1.7;white-space:pre-wrap;padding:8px 12px;background:var(--paper-2);border-radius:var(--radius);">${escapeHtml(quantDisc.transcript)}</div>
+      </div>
+    ` : ''}
+    ${quantDisc.conclusion ? `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">結論（定量レビュー全体）</div>
+        <div style="font-size:13px;color:var(--ink-900);line-height:1.7;padding:8px 12px;background:var(--accent-moss-soft);border-radius:var(--radius);border-left:2px solid var(--accent-moss);">${escapeHtml(quantDisc.conclusion)}</div>
+      </div>
+    ` : ''}
+    ${litWithDisc.length > 0 ? `
+      <div style="margin-top:4px;">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">シグナル個別の議論（${litWithDisc.length}件）</div>
+        ${litWithDisc.map(l => {
+          const d = signalDiscs[l.signal.id] || {};
+          return `
+            <div class="log-item">
+              <div class="log-item-title" style="font-size:12px;">[${l.theme.num}] ${escapeHtml(l.signal.text)}</div>
+              ${d.transcript ? `<div style="margin-top:5px;font-size:10px;font-weight:700;color:var(--ink-500);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">逐語</div><div style="font-size:12px;color:var(--ink-700);white-space:pre-wrap;padding:5px 10px;background:var(--paper-2);border-radius:var(--radius-sm);">${escapeHtml(d.transcript)}</div>` : ''}
+              ${d.conclusion ? `<div style="margin-top:5px;font-size:10px;font-weight:700;color:var(--ink-500);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">結論</div><div style="font-size:12px;color:var(--ink-900);padding:5px 10px;background:var(--accent-moss-soft);border-radius:var(--radius-sm);border-left:2px solid var(--accent-moss);">${escapeHtml(d.conclusion)}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : ''}
+  `;
+
+  // --- 5本柱セクション ---
+  const pillarBody = pillarKeys.length === 0
+    ? '<div style="color:var(--ink-400);font-size:13px;">なし</div>'
+    : pillarKeys.map(pid => {
+        const p = getPillar(pid);
+        const u = m.pillarUpdates[pid];
+        const discKey = 'pillar_' + pid;
+        const disc = signalDiscs[discKey] || {};
+        return `
+          <div class="log-item">
+            <div class="log-item-title">
+              <span class="pillar-tag ${p.class}" style="vertical-align:1px;margin-right:6px;">${p.label}</span>
+              ${escapeHtml(p.name)}
+            </div>
+            <div style="margin-top:6px;">
+              ${(Array.isArray(u) ? u : [u]).map(c => `
+                <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;">
+                  <div class="avatar avatar-xs ${getPerson(c.authorId).avatarClass}" style="flex-shrink:0;margin-top:1px;">${getPerson(c.authorId).initial}</div>
+                  <div style="font-size:12px;color:var(--ink-700);line-height:1.6;">${escapeHtml(c.text)}</div>
+                </div>
+              `).join('')}
+            </div>
+            ${disc.transcript ? `<div style="margin-top:6px;font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">逐語</div><div style="font-size:12px;color:var(--ink-700);white-space:pre-wrap;padding:6px 10px;background:var(--paper-2);border-radius:var(--radius-sm);">${escapeHtml(disc.transcript)}</div>` : ''}
+            ${disc.conclusion ? `<div style="margin-top:6px;font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">結論</div><div style="font-size:12px;color:var(--ink-900);padding:6px 10px;background:var(--accent-moss-soft);border-radius:var(--radius-sm);border-left:2px solid var(--accent-moss);">${escapeHtml(disc.conclusion)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+  // --- 論点セクション ---
+  const topicBody = topics.length === 0
+    ? '<div style="color:var(--ink-400);font-size:13px;">なし</div>'
+    : topics.map(t => `
+        <div class="log-item">
+          <div class="log-item-title">
+            ${escapeHtml(t.title || '（無題）')}
+            <span style="font-weight:400;font-size:11px;color:var(--ink-400);margin-left:6px;">— ${escapeHtml(getPerson(t.authorId).name)}</span>
+          </div>
+          ${(t.comments||[]).length > 0 ? `
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+              ${(t.comments||[]).map(c => `
+                <div style="display:flex;align-items:flex-start;gap:6px;">
+                  <div class="avatar avatar-xs ${getPerson(c.authorId).avatarClass}" style="flex-shrink:0;margin-top:1px;">${getPerson(c.authorId).initial}</div>
+                  <div style="font-size:12px;color:var(--ink-700);line-height:1.6;">${escapeHtml(c.text)}</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          ${t.transcript ? `<div style="margin-top:8px;font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">逐語記録</div><div style="font-size:12px;color:var(--ink-700);white-space:pre-wrap;padding:6px 10px;background:var(--paper-2);border-radius:var(--radius-sm);">${escapeHtml(t.transcript)}</div>` : ''}
+          ${t.conclusion ? `<div style="margin-top:6px;font-size:10px;font-weight:700;color:var(--ink-500);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">結論</div><div style="font-size:12px;color:var(--ink-900);padding:6px 10px;background:var(--accent-moss-soft);border-radius:var(--radius-sm);border-left:2px solid var(--accent-moss);">${escapeHtml(t.conclusion)}</div>` : ''}
+        </div>
+      `).join('');
+
+  // --- アクションセクション ---
+  const actionBody = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="openAddLogAction('${meetingId}')" style="font-size:11px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:inline;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
+      </button>
+    </div>
+    ${actions.length === 0 ? '<div style="color:var(--ink-400);font-size:13px;">なし</div>' :
+      actions.map(a => `
+        <div class="log-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <select onchange="updateLogActionStatus('${a.id}', this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink-700);cursor:pointer;font-family:inherit;">
+            <option value="todo" ${a.status==='todo'?'selected':''}>未着手</option>
+            <option value="in_progress" ${a.status==='in_progress'?'selected':''}>進行中</option>
+            <option value="done" ${a.status==='done'?'selected':''}>完了</option>
+          </select>
+          <span style="font-weight:600;font-size:13px;flex:1;">${escapeHtml(a.title)}</span>
+          <span style="font-size:11px;color:var(--ink-500);">${escapeHtml(getAssigneeNames(a))} ・ ${formatDateShort(a.deadline)}</span>
+        </div>
+      `).join('')
+    }
+  `;
 
   document.getElementById('modal-container').innerHTML = `
     <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
-      <div class="modal" style="max-width: 700px;">
+      <div class="modal" style="max-width:720px;">
         <div class="modal-head">
           <div>
             <div class="modal-title">${escapeHtml(m.title)}</div>
-            <div style="font-size: 11px; color: var(--ink-400); margin-top: 2px; font-family: var(--font-mono);">${formatDate(m.date)}</div>
+            <div style="font-size:11px;color:var(--ink-400);margin-top:2px;font-family:var(--font-mono);">${formatDate(m.date)}</div>
           </div>
           <button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
-        <div class="modal-body">
-
-          <div class="log-section">
-            <div class="log-section-title">点灯シグナル（${lit.length}件）</div>
-            ${lit.length === 0 ? '<div style="color: var(--ink-400); font-size: 13px;">なし</div>' :
-              lit.map(l => `
-                <div class="log-item">
-                  <div class="log-item-title">[${l.theme.num}] ${escapeHtml(l.signal.text)}</div>
-                  ${l.data.comment ? `<div class="log-item-comment">${escapeHtml(l.data.comment)}</div>` : ''}
-                </div>
-              `).join('')
-            }
-          </div>
-
-          <div class="log-section">
-            <div class="log-section-title">5本柱の進捗（${pillarKeys.length}件）</div>
-            ${pillarKeys.length === 0 ? '<div style="color: var(--ink-400); font-size: 13px;">なし</div>' :
-              pillarKeys.map(pid => {
-                const p = getPillar(pid);
-                const u = m.pillarUpdates[pid];
-                return `
-                  <div class="log-item">
-                    <div class="log-item-title">
-                      <span class="pillar-tag ${p.class}" style="vertical-align: 1px; margin-right: 6px;">${p.label}</span>
-                      ${escapeHtml(p.name)}
-                      <span style="font-weight: 400; font-size: 11px; color: var(--ink-400); margin-left: 8px;">${escapeHtml(getPerson(u.authorId).name)} 記入</span>
-                    </div>
-                    ${(Array.isArray(u) ? u : [u]).map(c => `
-                      <div class="log-item-comment" style="margin-bottom:4px;">
-                        <span style="font-size:10px;font-weight:600;color:var(--ink-500);">${escapeHtml(getPerson(c.authorId).name)}</span>
-                        ${escapeHtml(c.text)}
-                      </div>
-                    `).join('')}
-                  </div>
-                `;
-              }).join('')
-            }
-          </div>
-
-          <div class="log-section">
-            <div class="log-section-title">論点（${topics.length}件）</div>
-            ${topics.length === 0 ? '<div style="color: var(--ink-400); font-size: 13px;">なし</div>' :
-              topics.map(t => `
-                <div class="log-item">
-                  <div class="log-item-title">${escapeHtml(t.title)} <span style="font-weight: 400; font-size: 11px; color: var(--ink-400);">— ${escapeHtml(getPerson(t.authorId).name)}</span></div>
-                  ${(t.comments||[]).length > 0 ? `<div class="log-item-comment" style="color:var(--ink-500);font-size:11px;">${(t.comments||[]).map(c=>escapeHtml(getPerson(c.authorId).name)).join('・')} がコメント</div>` : ''}
-                  ${t.conclusion ? `<div class="log-item-comment"><strong>結論:</strong> ${escapeHtml(t.conclusion)}</div>` : ''}
-                </div>
-              `).join('')
-            }
-          </div>
-
-          <div class="log-section">
-            <div class="log-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-              アクション（${actions.length}件）
-              <button class="btn btn-ghost btn-sm" onclick="openAddLogAction('${meetingId}')" style="font-size:11px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:inline;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>追加
-              </button>
-            </div>
-            ${actions.length === 0 ? '<div style="color: var(--ink-400); font-size: 13px;">なし</div>' :
-              actions.map(a => `
-                <div class="log-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <select onchange="updateLogActionStatus('${a.id}', this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink-700);cursor:pointer;font-family:inherit;">
-                    <option value="todo" ${a.status==='todo'?'selected':''}>未着手</option>
-                    <option value="in_progress" ${a.status==='in_progress'?'selected':''}>進行中</option>
-                    <option value="done" ${a.status==='done'?'selected':''}>完了</option>
-                  </select>
-                  <span style="font-weight: 600; font-size: 13px; flex:1;">${escapeHtml(a.title)}</span>
-                  <span style="font-size: 11px; color: var(--ink-500);">${escapeHtml(getAssigneeNames(a))} ・ ${formatDateShort(a.deadline)}</span>
-                </div>
-              `).join('')
-            }
-          </div>
-
+        <div class="modal-body" style="padding:16px 20px;">
+          ${renderLogAccordion('quant-' + meetingId, '定量指標のモニタリング', lit.length + '件 点灯', quantBody, false)}
+          ${renderLogAccordion('pillar-' + meetingId, '中計戦略の進捗', pillarKeys.length + '件', pillarBody, false)}
+          ${renderLogAccordion('topic-' + meetingId, 'その他の議論トピック', topics.length + '件', topicBody, false)}
+          ${renderLogAccordion('action-' + meetingId, '現在のアクションリスト', actions.length + '件', actionBody, false)}
         </div>
         <div class="modal-foot">
           <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
@@ -5520,12 +5631,17 @@ function formatSyncTime() {
 }
 
 // ① 軽量ping: タイムスタンプだけ取得して変更を検知
+// ★ 修正: GAS側にpingアクションがない場合はfetchFullDataにフォールバック
 async function pingSync() {
   if (isSyncing) return;
   try {
     const res = await fetch(GAS_URL + '?action=ping', { mode: 'cors' });
     const result = await res.json();
-    if (!result.ok) return;
+    if (!result.ok) {
+      // GASがpingアクション未対応の場合はフルデータ取得にフォールバック
+      await fetchFullData();
+      return;
+    }
     const ts = result.timestamp;
     if (ts && ts !== lastKnownTimestamp) {
       // タイムスタンプが変わった → フルデータを取得
@@ -5536,20 +5652,32 @@ async function pingSync() {
       setSyncStatus('', '最終確認: ' + formatSyncTime());
     }
   } catch (e) {
-    // pingエラーは静かに無視（ネットワーク切断など）
-    setSyncStatus('error', '接続確認中...');
+    // pingエラーの場合もフルデータ取得を試みる（GASがpingアクション未対応など）
+    try {
+      await fetchFullData();
+    } catch(e2) {
+      setSyncStatus('error', '接続エラー — 手動更新してください');
+    }
   }
 }
 
 // ② フルデータ取得（変更検知時のみ呼ばれる）
+// ★ 修正: タイムアウト処理を追加して永久ハングを防止
 async function fetchFullData() {
   if (isSyncing) return;
   isSyncing = true;
   setSyncStatus('syncing', '更新を取得中...');
   try {
-    const res = await fetch(GAS_URL + '?action=get', { mode: 'cors' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒でタイムアウト
+    let res;
+    try {
+      res = await fetch(GAS_URL + '?action=get', { mode: 'cors', signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     const result = await res.json();
-    if (!result.ok || !result.value) { isSyncing = false; return; }
+    if (!result.ok || !result.value) { isSyncing = false; setSyncStatus('error', '取得失敗 — データ形式エラー'); return; }
     const freshJson = result.value;
     if (freshJson === lastSyncedJson) {
       setSyncStatus('', '最終同期: ' + formatSyncTime());
@@ -5567,7 +5695,11 @@ async function fetchFullData() {
       setTimeout(() => setSyncStatus('', '最終同期: ' + formatSyncTime()), 3000);
     }
   } catch (e) {
-    setSyncStatus('error', '取得エラー');
+    if (e.name === 'AbortError') {
+      setSyncStatus('error', '接続タイムアウト — 手動更新してください');
+    } else {
+      setSyncStatus('error', '取得エラー');
+    }
   }
   isSyncing = false;
 }
@@ -5595,17 +5727,13 @@ function startPolling() {
   lastSyncedJson = JSON.stringify(state);
 }
 
-// saveState をラップ: 自分の保存はdiffから除外 + タイムスタンプを記録
+// ★ 修正: saveState後は自分の変更としてマーク。saveState内でpingを呼ばない（fetch連鎖によるハング防止）
 const _origSaveState = saveState;
 saveState = async function() {
   await _origSaveState();
   lastSyncedJson = JSON.stringify(state);
-  // 保存後にpingしてタイムスタンプを同期
-  try {
-    const res = await fetch(GAS_URL + '?action=ping', { mode: 'cors' });
-    const result = await res.json();
-    if (result.ok && result.timestamp) lastKnownTimestamp = result.timestamp;
-  } catch(e) {}
+  // 自分が保存した直後はタイムスタンプをリセットして次のpollサイクルで正しく取得させる
+  lastKnownTimestamp = null;
   setSyncStatus('', '最終同期: ' + formatSyncTime());
 };
 
@@ -5614,13 +5742,23 @@ saveState = async function() {
 // ============================================================
 (async function init() {
   setSyncStatus('syncing', 'GASから読み込み中...');
-  try {
-    await loadState();
-  } catch (e) {
-    console.error('init loadState error:', e);
-    if (!state) state = createSampleData();
-  }
+  await loadState();
+  // URLハッシュからページを復元
+  const hash = location.hash.replace('#', '');
+  const validPages = ['home','quant','qual','meeting','actions','log','signal_admin','member_admin','howto'];
+  if (hash && validPages.includes(hash)) currentPage = hash;
   renderAll();
   startPolling();
 })();
+
+// ブラウザの戻る・進むボタン対応
+window.addEventListener('popstate', () => {
+  const hash = location.hash.replace('#', '');
+  const validPages = ['home','quant','qual','meeting','actions','log','signal_admin','member_admin','howto'];
+  if (hash && validPages.includes(hash)) {
+    currentPage = hash;
+    renderAll();
+    window.scrollTo(0, 0);
+  }
+});
 </script>
