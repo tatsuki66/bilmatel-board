@@ -2470,7 +2470,7 @@ function createSampleData() {
 // ステート
 // ============================================================
 let state = null;
-let currentPage = 'home';
+let currentPage = localStorage.getItem('builmatel_page') || 'home';
 let actionFilter = 'all';
 let selectedActions = new Set();
 let expandedThemes = new Set();
@@ -2520,7 +2520,7 @@ async function resetData() {
 // ============================================================
 // ユーティリティ
 // ============================================================
-function getCurrentMeeting() { return state.meetings[state.currentMeetingId]; }
+function getCurrentMeeting() { return state.currentMeetingId ? state.meetings[state.currentMeetingId] : null; }
 function getPerson(id) { return PERSONS.find(p => p.id === id) || { name: '—', initial: '?', avatarClass: 'avatar-1' }; }
 function getPillar(id) { return PILLARS.find(p => p.id === id) || null; }
 
@@ -2741,6 +2741,7 @@ function renderTopbar() {
 }
 function switchPage(id) {
   currentPage = id;
+  localStorage.setItem('builmatel_page', id);
   if (id === 'quant') {
     expandedThemes.clear();
     const m = getCurrentMeeting();
@@ -2757,6 +2758,7 @@ function switchPage(id) {
 // メインレンダー
 // ============================================================
 function renderAll() {
+  localStorage.setItem('builmatel_page', currentPage);
   document.getElementById('today-date').textContent = formatDate(new Date().toISOString().slice(0,10));
   renderSidebarNav();
   renderSidebarUserSwitcher();
@@ -2784,6 +2786,15 @@ function renderPage() {
 // ============================================================
 function renderHome() {
   const m = getCurrentMeeting();
+  if (!m) {
+    return `
+      <div class="card" style="padding:40px;text-align:center;color:var(--ink-400);">
+        <div style="font-size:15px;font-weight:600;margin-bottom:12px;">現在の定例がありません</div>
+        <div style="font-size:13px;margin-bottom:20px;">定例を完了したら、次回定例を作成してください</div>
+        <button class="btn btn-primary" onclick="openCreateMeetingModal()">次回定例を作成</button>
+      </div>
+    `;
+  }
   const days = daysUntil(m.date);
   const litCount = countLitSignals(m);
   const noCount = countNoSignals(m);
@@ -4050,14 +4061,18 @@ function openCompleteMeetingModal() {
 async function confirmCompleteMeeting() {
   const m = getCurrentMeeting();
   m.status = 'completed';
+  m.completedAt = new Date().toISOString();
   // 未完了アクションの持ち越し回数を+1
   state.actions.forEach(a => {
     if (a.meetingId === state.currentMeetingId && a.status !== 'done') {
       a.carryoverCount = (a.carryoverCount || 0) + 1;
     }
   });
+  // currentMeetingId を null にして過去ログへ移動させる
+  state.currentMeetingId = null;
   await saveState();
   closeModal();
+  switchPage('log');
   renderAll();
 }
 
