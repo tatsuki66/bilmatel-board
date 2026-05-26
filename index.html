@@ -2476,15 +2476,24 @@ let selectedActions = new Set();
 let expandedThemes = new Set();
 
 async function loadState() {
+  // タイムアウト付きfetch（8秒で諦める）
+  const fetchWithTimeout = (url, opts, ms) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { ...opts, signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  };
+
   try {
-    const res = await fetch(GAS_URL + '?action=get', { mode: 'cors' });
+    const res = await fetchWithTimeout(GAS_URL + '?action=get', { mode: 'cors' }, 8000);
     const json = await res.json();
     if (json.ok && json.value) {
       state = JSON.parse(json.value);
       return;
     }
   } catch (e) {
-    console.warn('GAS load失敗、ローカルフォールバック:', e);
+    const reason = e.name === 'AbortError' ? 'タイムアウト' : e.message;
+    console.warn('GAS load失敗（' + reason + '）、ローカルフォールバックへ');
     // フォールバック: window.storage
     try {
       const result = await window.storage.get(STORAGE_KEY, SHARED);
@@ -5605,7 +5614,12 @@ saveState = async function() {
 // ============================================================
 (async function init() {
   setSyncStatus('syncing', 'GASから読み込み中...');
-  await loadState();
+  try {
+    await loadState();
+  } catch (e) {
+    console.error('init loadState error:', e);
+    if (!state) state = createSampleData();
+  }
   renderAll();
   startPolling();
 })();
