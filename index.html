@@ -2745,9 +2745,11 @@ function switchPage(id) {
   if (id === 'quant') {
     expandedThemes.clear();
     const m = getCurrentMeeting();
-    for (const theme of SIGNAL_THEMES) {
-      const lit = theme.signals.filter(s => (m.signals[s.id] || {}).state === 'yes').length;
-      if (lit > 0) expandedThemes.add(theme.id);
+    if (m) {
+      for (const theme of SIGNAL_THEMES) {
+        const lit = theme.signals.filter(s => (m.signals[s.id] || {}).state === 'yes').length;
+        if (lit > 0) expandedThemes.add(theme.id);
+      }
     }
   }
   renderAll();
